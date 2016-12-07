@@ -1,13 +1,7 @@
+import pg8000
 from eventregistry import *
 
 er = EventRegistry()
-q = QueryEvents()
-q.addConcept(er.getConceptUri("Star Wars"))
-q.addRequestedResult(RequestEventsInfo(sortBy = "date", count=1))   # return event details for last 10 events
-
-res = er.execQuery(q)
-
-print(res)
 
 # er = EventRegistry()
 #
