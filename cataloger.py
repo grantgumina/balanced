@@ -1,7 +1,22 @@
 import pg8000
+import json
 from eventregistry import *
 
 er = EventRegistry()
+
+# output = open('output.txt', 'w')
+# output.write(str(ret))
+
+
+# creds_file = open('creds.txt', 'r')
+# username = creds_file.read()
+# password = creds_file.read()
+# creds_file.close()
+#
+# connection = pg8000.connect(user=username, password=password)
+# cursor = connection.cursor()
+#
+
 
 # er = EventRegistry()
 #
