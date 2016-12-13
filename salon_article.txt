@@ -1,3 +1,9 @@
+SELECT * FROM articles WHERE id in (
+  SELECT article_id FROM concepts WHERE concepts.event_registry_id IN (
+    SELECT event_registry_id FROM concepts WHERE article_id = 767
+  )
+);
+
 {u'557861092': {
 	u'info': {
 		u'lang': u'eng', 

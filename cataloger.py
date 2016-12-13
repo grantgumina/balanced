@@ -1,9 +1,12 @@
+from collections import defaultdict
 from eventregistry import *
 from helpers import *
 import psycopg2
 import json
 import time
 import sys
+
+number_of_articles_to_retrieve = 20
 
 creds_file = open('creds.txt', 'r')
 lines = creds_file.read().splitlines()
@@ -24,23 +27,22 @@ left_leaning_news_sources = ["CNN", "New York Times", "The Washington Post", "NB
 liberal_news_sources = ["Mother Jones", "Salon", "Slate"]
 international_news_sources = ["www.aljazeera.com", "BBC", "RT English", "The Guardian", "The Intercept"]
 
-# news_sources = conservative_news_sources + right_leaning_news_sources + moderate_news_sources + left_leaning_news_sources + liberal_news_sources + international_news_sources
+news_sources = conservative_news_sources + right_leaning_news_sources + moderate_news_sources + left_leaning_news_sources + liberal_news_sources + international_news_sources
 
-news_sources = moderate_news_sources
+# news_sources = moderate_news_sources
 
 for ns in news_sources:
     q = QueryArticles()
     q.addNewsSource(er.getNewsSourceUri(ns))
 
-    # Get 10 articles per news soruce
-    q.addRequestedResult(RequestArticlesInfo(count=1,
-        returnInfo=ReturnInfo(
-            articleInfo=ArticleInfoFlags(duplicateList=False, concepts=True, categories=False, location=False, image=False))))
+    # Get some articles from each news soruce
+    q.addRequestedResult(RequestArticlesInfo(count=number_of_articles_to_retrieve, returnInfo=ReturnInfo(articleInfo=ArticleInfoFlags(duplicateList=False, concepts=True, categories=False, location=False, image=False))))
 
     # Get articles from this news source
     res = er.execQuery(q)
 
-    if res is not None and res['articles'] is not None and res['articles']['results'] is not None:
+    if res is not None and res['articles'] is not None \
+    and res['articles']['results'] is not None:
 
         for r in res['articles']['results']:
             for key, value in r.items():
@@ -54,30 +56,39 @@ for ns in news_sources:
             values_tuple = (r['title'], r['body'], r['url'], r['uri'], r['eventUri'], r['date'], r['source']['title'], r['source']['uri'], r['source']['id'])
 
             # Insert article into database
-            sql_query_string = "INSERT INTO articles (title, body, url, uri, event_uri, date, source_name, source_url, source_id) VALUES %s"
+            sql_query_string = "INSERT INTO articles (title, body, url, uri, event_uri, date, source_name, source_url, source_id) VALUES %s RETURNING id"
             cursor.execute(sql_query_string, (values_tuple,))
             print("Succesfully inserted article")
 
             # Insert keywords into database
             high_score_concepts = []
             concepts = r['concepts']
-            print(len(concepts))
-            print(concepts)
+            concepts_sorted_by_score = defaultdict(list)
+            for c in concepts:
+                name = c['label'].values()[0]
+                concept_id = int(c['id'])
 
+                curi = er.getConceptUri(name)
+                score = int(c['score'])
+                keyword_entry_tuple = (convertToString(name), score, concept_id, curi)
+                concepts_sorted_by_score[score].append(keyword_entry_tuple)
 
-                # name = c['label'].values()[0]
-                # concept_id = int(c['id'])
-                #
-                # curi = er.getConceptUri(name)
-                # score = int(c['score'])
+            # Sort the ranked concepts by highest score first
+            concepts_sorted_by_score_keys = sorted(concepts_sorted_by_score.iterkeys(), reverse=True)
 
-            #     if score >= 4:
-            #         keyword_entry_tuple = (convertToString(name), score, concept_id)
-            #         keywords_sql_query_string = "INSERT INTO keywords (keyword, score, article_id) VALUES %s"
-            #         cursor.execute(keywords_sql_query_string, (keyword_entry_tuple,))
+            # Get the ID of the newly inserted article
+            newly_inserted_article_id = cursor.fetchone()[0]
+
+            # Insert the highest ranked concepts into the database
+            if len(concepts_sorted_by_score_keys) > 0:
+                for concepts_tuple in concepts_sorted_by_score[concepts_sorted_by_score_keys[0]]:
+                    concepts_tuple = concepts_tuple + (newly_inserted_article_id,)
+
+                    concepts_sql_query_string = "INSERT INTO concepts (name, score, event_registry_id, event_registry_uri, article_id) VALUES %s"
+                    cursor.execute(concepts_sql_query_string, (concepts_tuple,))
 
         # Commit the changes for each news source
-        # connection.commit()
+        connection.commit()
 
 # Close connection
 connection.close()
