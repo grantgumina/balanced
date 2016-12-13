@@ -29,8 +29,6 @@ international_news_sources = ["www.aljazeera.com", "BBC", "RT English", "The Gua
 
 news_sources = conservative_news_sources + right_leaning_news_sources + moderate_news_sources + left_leaning_news_sources + liberal_news_sources + international_news_sources
 
-# news_sources = moderate_news_sources
-
 for ns in news_sources:
     q = QueryArticles()
     q.addNewsSource(er.getNewsSourceUri(ns))
