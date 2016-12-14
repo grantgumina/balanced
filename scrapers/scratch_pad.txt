@@ -1,10 +1,39 @@
--- SELECT * FROM articles WHERE id in (
---   SELECT article_id FROM concepts WHERE concepts.event_registry_id IN (
---     SELECT event_registry_id FROM concepts WHERE article_id = 767
---   )
--- );
+-- Select related articles by concepts
+SELECT * FROM articles WHERE id in (
+  SELECT article_id FROM concepts WHERE concepts.event_registry_id IN (
+    SELECT event_registry_id FROM concepts WHERE article_id = (
+      SELECT id FROM articles ORDER BY random() LIMIT 1
+    )
+  )
+);
 
--- SELECT * FROM articles WHERE event_uri = 'eng-2717285';
+-- Select related articles by event_uri
+SELECT * FROM articles WHERE event_uri = (
+  SELECT event_uri
+  FROM articles
+  WHERE event_uri <> 'None'
+  GROUP BY event_uri
+  HAVING COUNT(*) > 1
+  ORDER BY random()
+  LIMIT 1
+);
+
+SELECT * FROM articles WHERE event_uri = 'eng-2717285';
+
+// ARTICLE DE DUPING //
+SELECT * FROM articles WHERE title IN (
+    SELECT title FROM articles GROUP BY title HAVING count(*) > 1
+) AND event_uri = 'None';
+
+SELECT * FROM articles WHERE title IN (
+    SELECT title FROM articles WHERE event_uri = 'None' GROUP BY title HAVING count(*) > 1
+);
+
+SELECT * FROM articles WHERE title IN (
+    SELECT title FROM articles GROUP BY title HAVING count(*) > 1
+);
+
+DELETE FROM articles WHERE articles.uri LIKE '%-TEMP%' AND articles.event_uri = 'None';
 
 ===
 
