@@ -101,6 +101,62 @@ function getRelatedArticlesByEventId(eventUri, client, done, callback) {
     });
 }
 
+function getRelatedArticlesByEventIdFromArticleUrl(articleUrl, client, done, callback) {
+    var queryString = `SELECT * FROM articles WHERE id IN (
+          SELECT article_id FROM concepts WHERE concepts.event_registry_id IN (
+            SELECT event_registry_id
+            FROM concepts
+            WHERE article_id = (
+              SELECT article_id
+              FROM articles
+              WHERE url =
+                    '` + articleUrl + `'
+            )
+          )
+        ) AND date >= (
+          SELECT date
+          FROM articles
+          WHERE url = '` + articleUrl + `'
+      ) - 1;`
+
+    client.query(queryString, function (error, result) {
+        done();
+
+        if (error) {
+            callback(error);
+            return;
+        }
+
+        callback(result.rows);
+    });
+
+}
+
+app.get('/url/:url/event', function (req, res) {
+    console.log("EVENT");
+    // var articleUrl = req.params.url;
+    //
+    // async.waterfall([
+    //     connectToDatabase,
+    //     getRelatedArticlesByEventIdFromArticleUrl
+    // ], function asyncComplete(error, result) {
+    //     if (error) {
+    //         console.log(error);
+    //         return res.send(error);
+    //     }
+    //
+    //     return res.send(result);
+    // })
+
+    res.send("EVENT");
+
+});
+
+app.get('/url/:url/concepts', function (req, res) {
+    console.log("CONCEPTS");
+    res.send("CONCEPTS");
+});
+
 app.get('/', function (req, res) {
 
     // async.waterfall([
@@ -121,7 +177,7 @@ app.get('/', function (req, res) {
         connectToDatabase,
         getRandomEventUri,
         getRelatedArticlesByEventId
-    ], function asyncComplete (error, result) {
+    ], function asyncComplete(error, result) {
         if (error) {
             console.log(error);
             return res.send(error);
@@ -129,8 +185,8 @@ app.get('/', function (req, res) {
 
         return res.send(result);
     });
-})
+});
 
 app.listen(3000, function () {
     console.log('Example app listening on port 3000!')
-})
+});
