@@ -1,3 +1,6 @@
+http://localhost:3000/url/http%3A%2F%2Fwww.washingtonexaminer.com%2Ftrump-to-meet-with-exxon-mobil-ceo-to-discuss-secretary-of-state-position%2Farticle%2F2609350
+
+
 -- RANDOM
 -- Select related articles by concepts
 SELECT * FROM articles WHERE id in (

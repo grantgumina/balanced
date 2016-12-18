@@ -102,22 +102,9 @@ function getRelatedArticlesByEventId(eventUri, client, done, callback) {
 }
 
 function getRelatedArticlesByEventIdFromArticleUrl(articleUrl, client, done, callback) {
-    var queryString = `SELECT * FROM articles WHERE id IN (
-          SELECT article_id FROM concepts WHERE concepts.event_registry_id IN (
-            SELECT event_registry_id
-            FROM concepts
-            WHERE article_id = (
-              SELECT article_id
-              FROM articles
-              WHERE url =
-                    '` + articleUrl + `'
-            )
-          )
-        ) AND date >= (
-          SELECT date
-          FROM articles
-          WHERE url = '` + articleUrl + `'
-      ) - 1;`
+    var queryString = `SELECT * FROM articles WHERE event_uri = (
+      SELECT event_uri FROM articles WHERE url = '` + articleUrl + `'
+  ) AND date > (SELECT date FROM articles WHERE url = '` + articleUrl + `') - 2;`
 
     client.query(queryString, function (error, result) {
         done();
@@ -132,29 +119,21 @@ function getRelatedArticlesByEventIdFromArticleUrl(articleUrl, client, done, cal
 
 }
 
-app.get('/url/:url/event', function (req, res) {
+app.get('/url/:url', function (req, res) {
     console.log("EVENT");
-    // var articleUrl = req.params.url;
-    //
-    // async.waterfall([
-    //     connectToDatabase,
-    //     getRelatedArticlesByEventIdFromArticleUrl
-    // ], function asyncComplete(error, result) {
-    //     if (error) {
-    //         console.log(error);
-    //         return res.send(error);
-    //     }
-    //
-    //     return res.send(result);
-    // })
+    var articleUrl = req.params.url;
 
-    res.send("EVENT");
+    async.waterfall([
+        connectToDatabase,
+        async.apply(getRelatedArticlesByEventIdFromArticleUrl, articleUrl)
+    ], function asyncComplete(error, result) {
+        if (error) {
+            console.log(error);
+            return res.send(error);
+        }
 
-});
-
-app.get('/url/:url/concepts', function (req, res) {
-    console.log("CONCEPTS");
-    res.send("CONCEPTS");
+        return res.send(result);
+    })
 });
 
 app.get('/', function (req, res) {
