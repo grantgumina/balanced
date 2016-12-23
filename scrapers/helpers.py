@@ -11,10 +11,17 @@ def convertToString(v):
         return str(v)
 
 def execute_sql_query(sql_query_string, *args, **kwargs):
+    creds_file = open('creds.txt', 'r')
+    lines = creds_file.read().splitlines()
+    username = lines[0]
+    password = lines[1]
+    database_name = lines[2]
+    creds_file.close()
+
     parameter_tuple = kwargs.get('parameter_tuple')
     return_data = kwargs.get('return_data')
 
-    database_connection_string = "dbname={} user={} password={} host=localhost port=5432".format("balanced", "postgres", "abc123")
+    database_connection_string = "dbname={} user={} password={} host=localhost port=5432".format(database_name, username, password)
     connection = psycopg2.connect(database_connection_string)
     cursor = connection.cursor()
 
