@@ -1,0 +1,43 @@
+{
+    "manifest_version": 2,
+    "name": "Balanced",
+    "version": "0.1",
+
+    "description": "A plain text description",
+
+    "browser_action": {
+        "default_icon": "img/yingyang_128.png",
+        "default_popup": "popup.html"
+    },
+
+    "permissions": [
+        "tabs",
+        "activeTab",
+        "http://localhost:3000/*"
+    ],
+
+    "background": {
+        "scripts": ["js/background.js"]
+    },
+
+    "content_scripts": [{
+        "matches": ["*://*.motherjones.com/*", "*://*.theguardian.com/*",
+            "*://*.cnn.com/*", "*://*.bbc.co.uk/*", "*://*.forbes.com/*",
+            "*://*.washingtonpost.com/*", "*://*.breitbart.com/*",
+            "*://*.nytimes.com/*", "*://*.usatoday.com/*",
+            "*://*.theintercept.com/*", "*://*.salon.com/*",
+            "*://*.slate.com/*", "*://*.aljazeera.com/*",
+            "*://*.abcnews.go.com/*", "*://*.theblaze.com/*",
+            "*://*.reuters.com/*", "*://*.wsj.com/*", "*://*.dailycaller.com/*",
+            "*://*.rt.com/*", "*://*.cbsnews.com/*", "*://*.bloomberg.com/*",
+            "*://*.nationalreview.com/*", "*://*.economist.com/*",
+            "*://*.foxnews.com/*", "*://*.nbcnews.com/*"],
+        "js": ["js/content.js"],
+        "run_at": "document_end"
+    }],
+
+    "icons": {
+        "16": "img/yingyang_16.png",
+        "128": "img/yingyang_128.png"
+    }
+}

@@ -11,6 +11,21 @@ SELECT * FROM articles WHERE id in (
   )
 );
 
+-- Select related articles by share concept scores
+SELECT * FROM articles WHERE id IN (
+  SELECT article_id
+  FROM (
+   SELECT *
+   FROM concepts
+   WHERE (
+    name = 'Christmas' AND score = 5)
+    OR (name = 'Berlin' AND score = 5)
+    OR (name = 'Truck' AND score = 5)
+  )
+  AS arts
+  GROUP BY article_id HAVING count(article_id) > 1
+);
+
 -- Select related articles by event_uri
 SELECT * FROM articles WHERE event_uri = (
   SELECT event_uri

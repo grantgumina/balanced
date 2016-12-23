@@ -1,8 +1,16 @@
 var express = require('express')
 var async = require('async')
+var url = require('url');
 var pg = require('pg')
 var fs = require('fs')
 var app = express()
+
+var liberal_news_sources_hostnames = ['motherjones.com', 'slate.com', 'salon.com'];
+var left_leaning_news_sources_hostnames = ['nbcnews.com', 'abcnews', 'cbsnews.com', 'cnn.com', 'usatoday.com', 'bloomberg.com', 'reuters.com', 'washingtonpost.com'];
+var moderate_news_sources_hostnames = ['forbes.com'];
+var right_leaning_news_sources_hostnames = ['foxnews.com', 'pagesix.com', 'economist.com', 'wsj.com'];
+var conservative_news_sources_hostnames = ['nationalreview.com', 'dailycaller.com', 'theblaze.com', 'breitbart.com', 'washingtonexaminer.com'];
+var international_news_sources_hostnames = ['aljazeera.com', 'theguardian.com', 'bbc.co.uk', 'rt.com'];
 
 var creds = fs.readFileSync('../scrapers/creds.txt').toString().split('\n');
 console.log(creds);
@@ -93,8 +101,7 @@ function getRelatedArticlesByEventId(eventUri, client, done, callback) {
         done();
 
         if (error) {
-            callback(error);
-            return;
+            return callback(error);
         }
 
         callback(result.rows);
@@ -110,17 +117,140 @@ function getRelatedArticlesByEventIdFromArticleUrl(articleUrl, client, done, cal
         done();
 
         if (error) {
-            callback(error);
-            return;
+            return callback(error);
         }
 
         callback(result.rows);
     });
-
 }
 
-app.get('/url/:url', function (req, res) {
-    console.log("EVENT");
+function getConceptsFromArticleUrl(articleUrl, client, done, callback) {
+    var queryString = `SELECT * FROM concepts WHERE article_id = (
+                            SELECT id
+                            FROM articles WHERE url = '` + articleUrl + `'
+                        ) ORDER BY score DESC LIMIT 5;`;
+
+    client.query(queryString, function (error, result) {
+        if (error) {
+            done();
+            return callback(error);
+        }
+
+        callback(null, result.rows, client, done);
+    });
+}
+
+function getRelatedArticlesByScoredConcepts(concepts, client, done, callback) {
+    var conceptFilterString = '';
+
+    for (var i = 0; i < concepts.length; i++) {
+        var concept = concepts[i];
+
+        // name = 'Christmas' AND score >= 5)
+        var cfs = "(name = '" + concept['name'] + "' AND score >= " +
+        concept['score'] + ")";
+
+        // If this concept isn't the last one
+        if (!((i + 1) >= concepts.length)) {
+            cfs += " OR "
+        }
+
+        conceptFilterString += cfs;
+    }
+
+    var queryString = `SELECT * FROM articles WHERE id IN (
+                        SELECT article_id
+                            FROM (
+                                SELECT *
+                                FROM concepts
+                                WHERE (
+                                    ` + conceptFilterString + `
+                                )
+                            )
+                            AS arts
+                            GROUP BY article_id HAVING count(article_id) > 1
+                        );`;
+
+    client.query(queryString, function (error, result) {
+        done()
+        if (error) {
+            return callback(error);
+        }
+
+        callback(result.rows);
+    });
+}
+
+function sortArticles(articlesJSON, articleUrl) {
+    var hostname = url.parse(articleUrl).hostname;
+
+    var sortedArticles = {};
+    var returnedArticleJSON = { "recommended": [], "similar": [], "same": [] };
+
+    // Sort articles by news site
+    for (var i = 0; i < articlesJSON.length; i++) {
+        var article = articlesJSON[i];
+        console.log(article);
+
+        if (!sortedArticles[article['source_name']]) {
+            sortedArticles[article['source_name']] = [];
+        }
+
+        sortedArticles[article['source_name']].push(article);
+    }
+
+    if (isHostnameAffiliated(liberal_news_sources_hostnames, hostname)) {
+
+    } else if (isHostnameAffiliated(left_leaning_news_sources_hostnames, hostname)) {
+
+    } else if (isHostnameAffiliated(moderate_news_sources, hostname)) {
+
+    } else if (isHostnameAffiliated(right_leaning_news_sources_hostnames, hostname)) {
+
+    } else if (isHostnameAffiliated(conservative_news_sources_hostnames, hostname)) {
+
+    }
+}
+
+function isHostnameAffiliated(siteNames, hostname) {
+    for (var i = 0; i < siteNames.length; i++) {
+        var siteName = siteNames[i];
+        if (hostname.includes(siteName)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+// Routes
+app.get('/concepts/:url', function (req, res) {
+    var articleUrl = req.params.url;
+
+    async.waterfall([
+        connectToDatabase,
+        async.apply(getConceptsFromArticleUrl, articleUrl),
+        getRelatedArticlesByScoredConcepts,
+        async.apply(articleUrl)
+    ], function asyncComplete(error, result) {
+        if (error) {
+            console.log(error);
+            return res.send(error);
+        }
+
+        var json = JSON.stringify(result);
+
+        res.writeHead(200, {
+            'content-type':'application/json',
+            'content-length': Buffer.byteLength(json)
+        });
+
+        return res.send(json);
+    });
+});
+
+app.get('/event/:url', function (req, res) {
+    console.log("GET RELATED ARTICLES BY EVENT URI");
     var articleUrl = req.params.url;
 
     async.waterfall([
@@ -132,26 +262,18 @@ app.get('/url/:url', function (req, res) {
             return res.send(error);
         }
 
-        return res.send(result);
-    })
+        var json = JSON.stringify(result);
+
+        res.writeHead(200, {
+            'content-type':'application/json',
+            'content-length': Buffer.byteLength(json)
+        });
+
+        return res.send(json);
+    });
 });
 
 app.get('/', function (req, res) {
-
-    // async.waterfall([
-    //     connectToDatabase,
-    //     getRandomArticleId,
-    //     getRelatedArticlesByEventRegistryConceptIds
-    // ], function asyncComplete (error, result) {
-    //     if (error) {
-    //         console.log(error);
-    //         return res.send(error);
-    //     }
-    //
-    //     return res.send(result);
-    // });
-
-
     async.waterfall([
         connectToDatabase,
         getRandomEventUri,
