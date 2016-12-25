@@ -5,12 +5,12 @@ var pg = require('pg')
 var fs = require('fs')
 var app = express()
 
-var liberal_news_sources_hostnames = ['motherjones.com', 'slate.com', 'salon.com'];
-var left_leaning_news_sources_hostnames = ['nbcnews.com', 'abcnews', 'cbsnews.com', 'cnn.com', 'usatoday.com', 'bloomberg.com', 'reuters.com', 'washingtonpost.com'];
-var moderate_news_sources_hostnames = ['forbes.com'];
-var right_leaning_news_sources_hostnames = ['foxnews.com', 'pagesix.com', 'economist.com', 'wsj.com'];
-var conservative_news_sources_hostnames = ['nationalreview.com', 'dailycaller.com', 'theblaze.com', 'breitbart.com', 'washingtonexaminer.com'];
-var international_news_sources_hostnames = ['aljazeera.com', 'theguardian.com', 'bbc.co.uk', 'rt.com'];
+// var liberal_news_sources_hostnames = ['motherjones.com', 'slate.com', 'salon.com'];
+// var left_leaning_news_sources_hostnames = ['nbcnews.com', 'abcnews', 'cbsnews.com', 'cnn.com', 'usatoday.com', 'bloomberg.com', 'reuters.com', 'washingtonpost.com'];
+// var moderate_news_sources_hostnames = ['forbes.com'];
+// var right_leaning_news_sources_hostnames = ['foxnews.com', 'pagesix.com', 'economist.com', 'wsj.com'];
+// var conservative_news_sources_hostnames = ['nationalreview.com', 'dailycaller.com', 'theblaze.com', 'breitbart.com', 'washingtonexaminer.com'];
+// var international_news_sources_hostnames = ['aljazeera.com', 'theguardian.com', 'bbc.co.uk', 'rt.com'];
 
 var creds = fs.readFileSync('../scrapers/creds.txt').toString().split('\n');
 console.log(creds);
@@ -51,80 +51,106 @@ function connectToDatabase(callback) {
     });
 }
 
-function getRandomArticleId(client, done, callback) {
+function getSourceInformation(client, done, callback) {
 
-    client.query('SELECT id FROM articles ORDER BY random() LIMIT 1;',
-    function (error, result) {
+    async.parallel({
+        conservative: function (cb) {
+            client.query("SELECT partial_hostname, display_name FROM news_sources WHERE political_affiliation = 'conservative';",
+            function (error, result) {
+                if (error) {
+                    return cb(error);
+                }
+
+                cb(null, result.rows);
+            });
+        },
+        right_leaning: function (cb) {
+            client.query("SELECT partial_hostname, display_name FROM news_sources WHERE political_affiliation = 'right_leaning';",
+            function (error, result) {
+                if (error) {
+                    return cb(error);
+                }
+
+                cb(null, result.rows);
+            });
+        },
+        moderate: function (cb) {
+            client.query("SELECT partial_hostname, display_name FROM news_sources WHERE political_affiliation = 'moderate';",
+            function (error, result) {
+                if (error) {
+                    return cb(error);
+                }
+
+                cb(null, result.rows);
+            });
+        },
+        left_leaning: function (cb) {
+            client.query("SELECT partial_hostname, display_name FROM news_sources WHERE political_affiliation = 'left_leaning';",
+            function (error, result) {
+                if (error) {
+                    return cb(error);
+                }
+
+                cb(null, result.rows);
+            });
+        },
+        liberal: function (cb) {
+
+            client.query("SELECT partial_hostname, display_name FROM news_sources WHERE political_affiliation = 'liberal';",
+            function (error, result) {
+                if (error) {
+                    // done();
+                    return cb(error);
+                }
+
+                cb(null, result.rows);
+            });
+        }
+    }, function (error, results) {
         if (error) {
             done();
-            callback(error);
-            return;
-        }
-
-        callback(null, result.rows[0].id, client, done);
-    });
-}
-
-function getRelatedArticlesByEventRegistryConceptIds(articleId, client, done, callback) {
-    var queryString = `SELECT * FROM articles WHERE id in (SELECT article_id
-        FROM concepts WHERE concepts.event_registry_id IN (SELECT
-            event_registry_id FROM concepts WHERE article_id = ` + articleId +
-        `));`
-
-    client.query(queryString, function (error, result) {
-        done();
-
-        var articles = result.rows;
-
-        callback(articles);
-    })
-}
-
-function getRandomEventUri(client, done, callback) {
-    var queryString = `SELECT event_uri FROM articles WHERE event_uri <> 'None'
-        GROUP BY event_uri HAVING COUNT(*) > 1 ORDER BY random() LIMIT 1`;
-
-    client.query(queryString, function (error, result) {
-        if (error) {
-            done();
-            callback(error);
-            return;
-        }
-
-        callback(null, result.rows[0].event_uri, client, done);
-    });
-}
-
-function getRelatedArticlesByEventId(eventUri, client, done, callback) {
-    var queryString = "SELECT * FROM articles WHERE event_uri = '" + eventUri + "'";
-    client.query(queryString, function (error, result) {
-        done();
-
-        if (error) {
             return callback(error);
         }
 
-        callback(result.rows);
-    });
-}
+        var returnedInfo = {
+            'conservative': {
+                'hostnames': [],
+                'source_names': []
+            },
+            'right_leaning': {
+                'hostnames': [],
+                'source_names': []
+            },
+            'moderate': {
+                'hostnames': [],
+                'source_names': []
+            },
+            'left_leaning': {
+                'hostnames': [],
+                'source_names': []
+            },
+            'liberal': {
+                'hostnames': [],
+                'source_names': []
+            }
+        };
 
-function getRelatedArticlesByEventIdFromArticleUrl(articleUrl, client, done, callback) {
-    var queryString = `SELECT * FROM articles WHERE event_uri = (
-      SELECT event_uri FROM articles WHERE url = '` + articleUrl + `'
-  ) AND date > (SELECT date FROM articles WHERE url = '` + articleUrl + `') - 2;`
-
-    client.query(queryString, function (error, result) {
-        done();
-
-        if (error) {
-            return callback(error);
+        for (political_affiliation in results) {
+            var information = results[political_affiliation];
+            console.log(information);
+            for (key in information) {
+                var info = information[key];
+                returnedInfo[political_affiliation]['hostnames'].push(info['partial_hostname']);
+                returnedInfo[political_affiliation]['source_names'].push(info['display_name']);
+            }
         }
 
-        callback(result.rows);
+        callback(null, client, done, returnedInfo);
     });
 }
 
-function getConceptsFromArticleUrl(articleUrl, client, done, callback) {
+function getConceptsFromArticleUrl(articleUrl, client, done, sourceInformation, callback) {
+
     var queryString = `SELECT * FROM concepts WHERE article_id = (
                             SELECT id
                             FROM articles WHERE url = '` + articleUrl + `'
@@ -136,11 +162,16 @@ function getConceptsFromArticleUrl(articleUrl, client, done, callback) {
             return callback(error);
         }
 
-        callback(null, result.rows, client, done);
+        callback(null, result.rows, client, done, articleUrl, sourceInformation);
     });
 }
 
-function getRelatedArticlesByScoredConcepts(concepts, client, done, callback) {
+function getRelatedArticlesByScoredConcepts(concepts, client, done, articleUrl, sourceInformation, callback) {
+
+    if (concepts.length == 0) {
+        return callback([]);
+    }
+
     var conceptFilterString = '';
 
     for (var i = 0; i < concepts.length; i++) {
@@ -157,6 +188,7 @@ function getRelatedArticlesByScoredConcepts(concepts, client, done, callback) {
 
         conceptFilterString += cfs;
     }
+
 
     var queryString = `SELECT * FROM articles WHERE id IN (
                         SELECT article_id
@@ -177,21 +209,31 @@ function getRelatedArticlesByScoredConcepts(concepts, client, done, callback) {
             return callback(error);
         }
 
-        callback(result.rows);
+        return callback(null, result.rows, articleUrl, sourceInformation);
     });
 }
 
-function sortArticles(articlesJSON, articleUrl) {
-    var hostname = url.parse(articleUrl).hostname;
+function sortArticles(articlesJSON, articleUrl, sourceInformation, callback) {
 
+    var conservativeNewsHostnames = sourceInformation['conservative']['hostnames'];
+    var rightLeaningNewsHostnames = sourceInformation['right_leaning']['hostnames'];
+    var moderateNewsHostnames = sourceInformation['moderate']['hostnames'];
+    var leftLeaningNewsHostnames = sourceInformation['left_leaning']['hostnames'];
+    var liberalNewsHostnames = sourceInformation['liberal']['hostnames'];
+
+    var conservativeNewsDisplayNames = sourceInformation['conservative']['hostnames'];
+    var rightLeaningNewsDisplayNames = sourceInformation['right_leaning']['display_names'];
+    var moderateNewsDisplayNames = sourceInformation['moderate']['display_names'];
+    var leftLeaningNewsDisplayNames = sourceInformation['left_leaning']['display_names'];
+    var liberalNewsDisplayNames = sourceInformation['liberal']['display_names'];
+
+    var hostname = url.parse(articleUrl).hostname;
     var sortedArticles = {};
     var returnedArticleJSON = { "recommended": [], "similar": [], "same": [] };
 
     // Sort articles by news site
     for (var i = 0; i < articlesJSON.length; i++) {
         var article = articlesJSON[i];
-        console.log(article);
-
         if (!sortedArticles[article['source_name']]) {
             sortedArticles[article['source_name']] = [];
         }
@@ -199,17 +241,40 @@ function sortArticles(articlesJSON, articleUrl) {
         sortedArticles[article['source_name']].push(article);
     }
 
-    if (isHostnameAffiliated(liberal_news_sources_hostnames, hostname)) {
-
-    } else if (isHostnameAffiliated(left_leaning_news_sources_hostnames, hostname)) {
-
-    } else if (isHostnameAffiliated(moderate_news_sources, hostname)) {
-
-    } else if (isHostnameAffiliated(right_leaning_news_sources_hostnames, hostname)) {
-
-    } else if (isHostnameAffiliated(conservative_news_sources_hostnames, hostname)) {
-
+    // Recommended articles
+    // If the article is conservative, recommend liberal ones
+    if (isHostnameAffiliated(conservativeNewsHostnames, hostname)) {
+        
     }
+
+    if (isHostnameAffiliated(liberalNewsHostnames, hostname)) {
+        // for (var i = 0; i < conservativeNewsDisplayNames.length; i++) {
+        //     var conservativeNewsDisplayName = conservativeNewsDisplayNames[i];
+        //     returnedArticleJSON['recommended'].push(sortedArticles[conservativeNewsHostname]);
+        // }
+        //
+        // for (var i = 0; i < rightLeaningNewsHostnames.length; i++) {
+        //     var rightLeaningNewsDisplayName = rightLeaningNewsDisplayNames[i];
+        //     returnedArticleJSON['recommended'].push(sortedArticles[rightLeaningNewsHostname]);
+        // }
+        //
+        // for (var i = 0; i < leftLeaningNewsHostnames.length; i++) {
+        //     var liberalNewsHostname = leftLeaningNewsHostnames[i];
+        //     returnedArticleJSON['similar'].push(sortedArticles[liberalNewsHostname]);
+        // }
+        //
+        // for (var i = 0; i < liberalNewsHostnames.length; i++) {
+        //     var rightLeaningNewsDisplayName = rightLeaningNewsDisplayNames[i];
+        //     if (liberalNewsHostname != hostname) {
+        //         returnedArticleJSON['similar'].push(sortedArticles[liberalNewsHostname]);
+        //     }
+        // }
+        //
+        // returnedArticleJSON['same'].push(sortedArticles[hostname]);
+    }
+
+    // console.log(returnedArticleJSON['recommended']);
+    return callback(returnedArticleJSON);
 }
 
 function isHostnameAffiliated(siteNames, hostname) {
@@ -225,37 +290,14 @@ function isHostnameAffiliated(siteNames, hostname) {
 
 // Routes
 app.get('/concepts/:url', function (req, res) {
-    var articleUrl = req.params.url;
+    var articleUrl = '' + req.params.url + '';
 
     async.waterfall([
         connectToDatabase,
+        getSourceInformation,
         async.apply(getConceptsFromArticleUrl, articleUrl),
         getRelatedArticlesByScoredConcepts,
-        async.apply(articleUrl)
-    ], function asyncComplete(error, result) {
-        if (error) {
-            console.log(error);
-            return res.send(error);
-        }
-
-        var json = JSON.stringify(result);
-
-        res.writeHead(200, {
-            'content-type':'application/json',
-            'content-length': Buffer.byteLength(json)
-        });
-
-        return res.send(json);
-    });
-});
-
-app.get('/event/:url', function (req, res) {
-    console.log("GET RELATED ARTICLES BY EVENT URI");
-    var articleUrl = req.params.url;
-
-    async.waterfall([
-        connectToDatabase,
-        async.apply(getRelatedArticlesByEventIdFromArticleUrl, articleUrl)
+        sortArticles
     ], function asyncComplete(error, result) {
         if (error) {
             console.log(error);
