@@ -5,13 +5,6 @@ var pg = require('pg')
 var fs = require('fs')
 var app = express()
 
-// var liberal_news_sources_hostnames = ['motherjones.com', 'slate.com', 'salon.com'];
-// var left_leaning_news_sources_hostnames = ['nbcnews.com', 'abcnews', 'cbsnews.com', 'cnn.com', 'usatoday.com', 'bloomberg.com', 'reuters.com', 'washingtonpost.com'];
-// var moderate_news_sources_hostnames = ['forbes.com'];
-// var right_leaning_news_sources_hostnames = ['foxnews.com', 'pagesix.com', 'economist.com', 'wsj.com'];
-// var conservative_news_sources_hostnames = ['nationalreview.com', 'dailycaller.com', 'theblaze.com', 'breitbart.com', 'washingtonexaminer.com'];
-// var international_news_sources_hostnames = ['aljazeera.com', 'theguardian.com', 'bbc.co.uk', 'rt.com'];
-
 var creds = fs.readFileSync('../scrapers/creds.txt').toString().split('\n');
 console.log(creds);
 
@@ -31,12 +24,6 @@ var config = {
 
 var pool = new pg.Pool(config);
 pool.on('error', function (err, client) {
-    // if an error is encountered by a client while it sits idle in the pool
-    // the pool itself will emit an error event with both the error and
-    // the client which emitted the original error
-    // this is a rare occurrence but can happen if there is a network partition
-    // between your application and the database, the database restarts, etc.
-    // and so you might want to handle it and at least log it out
     console.error('idle client error', err.message, err.stack)
 })
 
@@ -49,6 +36,96 @@ function connectToDatabase(callback) {
 
         callback(null, client, done);
     });
+}
+
+function isHostnameAffiliated(siteNames, hostname) {
+    for (var i = 0; i < siteNames.length; i++) {
+        var siteName = siteNames[i];
+        if (hostname.includes(siteName)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function buildConceptsFilterString(concepts) {
+    var conceptsFilterString = '';
+
+    for (var i = 0; i < concepts.length; i++) {
+        var concept = concepts[i];
+
+        // name = 'Christmas' AND score >= 5)
+        var cfs = "(name = '" + concept['name'] + "' AND score >= " +
+        concept['score'] + ")";
+
+        // If this concept isn't the last one
+        if (!((i + 1) >= concepts.length)) {
+            cfs += " OR "
+        }
+
+        conceptsFilterString += cfs;
+    }
+
+    return conceptsFilterString;
+}
+
+function buildRecomendedNewsSourcesString(sourceInformation, hostname) {
+    var recommendedNewsSourcesString = '';
+
+    var conservativeNewsHostnames = sourceInformation['conservative']['hostnames'];
+    var rightLeaningNewsHostnames = sourceInformation['right_leaning']['hostnames'];
+    var moderateNewsHostnames = sourceInformation['moderate']['hostnames'];
+    var leftLeaningNewsHostnames = sourceInformation['left_leaning']['hostnames'];
+    var liberalNewsHostnames = sourceInformation['liberal']['hostnames'];
+
+    if (isHostnameAffiliated(conservativeNewsHostnames, hostname)) {
+        // Recommend articles from liberal and left leaning news sources
+        recommendedNewsSourcesString = "'liberal', 'left_leaning'";
+    } else if (isHostnameAffiliated(rightLeaningNewsHostnames, hostname)) {
+        // Recommend articles from left leaning and liberal news sources
+        recommendedNewsSourcesString = "'left_leaning', 'liberal'";
+    } else if (isHostnameAffiliated(moderateNewsHostnames, hostname)) {
+        // Recommend articles from conservative and liberal news sources
+        recommendedNewsSourcesString = "'conservative', 'liberal'";
+    } else if (isHostnameAffiliated(leftLeaningNewsHostnames, hostname)) {
+        // Recommend articles from right leaning and conservative news sources
+        recommendedNewsSourcesString = "'right_leaning', 'conservative'";
+    } else if (isHostnameAffiliated(liberalNewsHostnames, hostname)) {
+        // Recommend articles from conservative and right leaning news sources
+        recommendedNewsSourcesString = "'conservative', 'right_leaning'";
+    }
+
+    return recommendedNewsSourcesString;
+}
+
+function buildSimilarNewsSourcesString(sourceInformation, hostname) {
+    var similarNewsSourcesString = '';
+
+    var conservativeNewsHostnames = sourceInformation['conservative']['hostnames'];
+    var rightLeaningNewsHostnames = sourceInformation['right_leaning']['hostnames'];
+    var moderateNewsHostnames = sourceInformation['moderate']['hostnames'];
+    var leftLeaningNewsHostnames = sourceInformation['left_leaning']['hostnames'];
+    var liberalNewsHostnames = sourceInformation['liberal']['hostnames'];
+
+    if (isHostnameAffiliated(conservativeNewsHostnames, hostname)) {
+        // Recommend articles from liberal and left leaning news sources
+        similarNewsSourcesString = "'conservative', 'right_leaning'";
+    } else if (isHostnameAffiliated(rightLeaningNewsHostnames, hostname)) {
+        // Recommend articles from left leaning and liberal news sources
+        similarNewsSourcesString = "'right_leaning', 'conservative'";
+    } else if (isHostnameAffiliated(moderateNewsHostnames, hostname)) {
+        // Recommend articles from conservative and liberal news sources
+        similarNewsSourcesString = "'moderate'";
+    } else if (isHostnameAffiliated(leftLeaningNewsHostnames, hostname)) {
+        // Recommend articles from right leaning and conservative news sources
+        similarNewsSourcesString = "'left_leaning', 'liberal'";
+    } else if (isHostnameAffiliated(liberalNewsHostnames, hostname)) {
+        // Recommend articles from conservative and right leaning news sources
+        similarNewsSourcesString = "'liberal', 'left_leaning'";
+    }
+
+    return similarNewsSourcesString;
 }
 
 function getSourceInformation(client, done, callback) {
@@ -108,7 +185,6 @@ function getSourceInformation(client, done, callback) {
         }
     }, function (error, results) {
         if (error) {
-            done();
             return callback(error);
         }
 
@@ -137,7 +213,6 @@ function getSourceInformation(client, done, callback) {
 
         for (political_affiliation in results) {
             var information = results[political_affiliation];
-            console.log(information);
             for (key in information) {
                 var info = information[key];
                 returnedInfo[political_affiliation]['hostnames'].push(info['partial_hostname']);
@@ -150,7 +225,6 @@ function getSourceInformation(client, done, callback) {
 }
 
 function getConceptsFromArticleUrl(articleUrl, client, done, sourceInformation, callback) {
-
     var queryString = `SELECT * FROM concepts WHERE article_id = (
                             SELECT id
                             FROM articles WHERE url = '` + articleUrl + `'
@@ -158,134 +232,75 @@ function getConceptsFromArticleUrl(articleUrl, client, done, sourceInformation, 
 
     client.query(queryString, function (error, result) {
         if (error) {
-            done();
+            console.log("getConceptsFromArticleUrl - 2 - ERROR");
+            console.log(error);
             return callback(error);
         }
-
         callback(null, result.rows, client, done, articleUrl, sourceInformation);
     });
 }
 
-function getRelatedArticlesByScoredConcepts(concepts, client, done, articleUrl, sourceInformation, callback) {
+function getArticles(concepts, client, done, articleUrl, sourceInformation, callback) {
 
     if (concepts.length == 0) {
-        return callback([]);
+        var articlesJSON = { 'recommended': [], 'similar': [], 'same': [] };
+        return callback(null, articlesJSON);
     }
 
-    var conceptFilterString = '';
+    var articleSourceHostname = url.parse(articleUrl).hostname;
+    var conceptsFilterString = buildConceptsFilterString(concepts);
+    var recommendedNewsSourcesString = buildRecomendedNewsSourcesString(sourceInformation, articleSourceHostname);
+    var similarNewsSourcesString = buildSimilarNewsSourcesString(sourceInformation, articleSourceHostname);
 
-    for (var i = 0; i < concepts.length; i++) {
-        var concept = concepts[i];
-
-        // name = 'Christmas' AND score >= 5)
-        var cfs = "(name = '" + concept['name'] + "' AND score >= " +
-        concept['score'] + ")";
-
-        // If this concept isn't the last one
-        if (!((i + 1) >= concepts.length)) {
-            cfs += " OR "
+    // From the concepts returned by getConceptsFromArticleUrl
+    async.parallel({
+        // Get recommended articles
+        recommended: function (cb) {
+            getArticlesFromSourcesWithCertainPoliticalAffiliations(client, done, conceptsFilterString, recommendedNewsSourcesString, cb);
+        },
+        // Get similar articles
+        similar: function (cb) {
+            getArticlesFromSourcesWithCertainPoliticalAffiliations(client, done, conceptsFilterString, similarNewsSourcesString, cb);
         }
+        // TODO
+        // Get same articles
+    }, function asyncComplete(error, articlesJSON) {
 
-        conceptFilterString += cfs;
-    }
+        done();
 
+        if (error) {
+            return callback(error);
+        }
+        callback(null, articlesJSON);
+    });
+}
 
-    var queryString = `SELECT * FROM articles WHERE id IN (
-                        SELECT article_id
-                            FROM (
-                                SELECT *
-                                FROM concepts
-                                WHERE (
-                                    ` + conceptFilterString + `
+function getArticlesFromSourcesWithCertainPoliticalAffiliations(client, done, conceptsFilterString, politicalAffiliationString, callback) {
+    var queryString = `SELECT * FROM articles, news_sources
+                        WHERE articles.id IN (
+                            SELECT article_id
+                                FROM (
+                                    SELECT *
+                                    FROM concepts
+                                    WHERE (
+                                        ` + conceptsFilterString + `
+                                    )
                                 )
-                            )
                             AS arts
                             GROUP BY article_id HAVING count(article_id) > 1
-                        );`;
+                        )
+                        AND news_sources.display_name = articles.source_name
+                        AND news_sources.political_affiliation IN
+                            (` + politicalAffiliationString + `)
+                        ORDER BY articles.date DESC;`;
 
     client.query(queryString, function (error, result) {
-        done()
         if (error) {
             return callback(error);
         }
 
-        return callback(null, result.rows, articleUrl, sourceInformation);
+        callback(null, result.rows);
     });
-}
-
-function sortArticles(articlesJSON, articleUrl, sourceInformation, callback) {
-
-    var conservativeNewsHostnames = sourceInformation['conservative']['hostnames'];
-    var rightLeaningNewsHostnames = sourceInformation['right_leaning']['hostnames'];
-    var moderateNewsHostnames = sourceInformation['moderate']['hostnames'];
-    var leftLeaningNewsHostnames = sourceInformation['left_leaning']['hostnames'];
-    var liberalNewsHostnames = sourceInformation['liberal']['hostnames'];
-
-    var conservativeNewsDisplayNames = sourceInformation['conservative']['hostnames'];
-    var rightLeaningNewsDisplayNames = sourceInformation['right_leaning']['display_names'];
-    var moderateNewsDisplayNames = sourceInformation['moderate']['display_names'];
-    var leftLeaningNewsDisplayNames = sourceInformation['left_leaning']['display_names'];
-    var liberalNewsDisplayNames = sourceInformation['liberal']['display_names'];
-
-    var hostname = url.parse(articleUrl).hostname;
-    var sortedArticles = {};
-    var returnedArticleJSON = { "recommended": [], "similar": [], "same": [] };
-
-    // Sort articles by news site
-    for (var i = 0; i < articlesJSON.length; i++) {
-        var article = articlesJSON[i];
-        if (!sortedArticles[article['source_name']]) {
-            sortedArticles[article['source_name']] = [];
-        }
-
-        sortedArticles[article['source_name']].push(article);
-    }
-
-    // Recommended articles
-    // If the article is conservative, recommend liberal ones
-    if (isHostnameAffiliated(conservativeNewsHostnames, hostname)) {
-        
-    }
-
-    if (isHostnameAffiliated(liberalNewsHostnames, hostname)) {
-        // for (var i = 0; i < conservativeNewsDisplayNames.length; i++) {
-        //     var conservativeNewsDisplayName = conservativeNewsDisplayNames[i];
-        //     returnedArticleJSON['recommended'].push(sortedArticles[conservativeNewsHostname]);
-        // }
-        //
-        // for (var i = 0; i < rightLeaningNewsHostnames.length; i++) {
-        //     var rightLeaningNewsDisplayName = rightLeaningNewsDisplayNames[i];
-        //     returnedArticleJSON['recommended'].push(sortedArticles[rightLeaningNewsHostname]);
-        // }
-        //
-        // for (var i = 0; i < leftLeaningNewsHostnames.length; i++) {
-        //     var liberalNewsHostname = leftLeaningNewsHostnames[i];
-        //     returnedArticleJSON['similar'].push(sortedArticles[liberalNewsHostname]);
-        // }
-        //
-        // for (var i = 0; i < liberalNewsHostnames.length; i++) {
-        //     var rightLeaningNewsDisplayName = rightLeaningNewsDisplayNames[i];
-        //     if (liberalNewsHostname != hostname) {
-        //         returnedArticleJSON['similar'].push(sortedArticles[liberalNewsHostname]);
-        //     }
-        // }
-        //
-        // returnedArticleJSON['same'].push(sortedArticles[hostname]);
-    }
-
-    // console.log(returnedArticleJSON['recommended']);
-    return callback(returnedArticleJSON);
-}
-
-function isHostnameAffiliated(siteNames, hostname) {
-    for (var i = 0; i < siteNames.length; i++) {
-        var siteName = siteNames[i];
-        if (hostname.includes(siteName)) {
-            return true;
-        }
-    }
-
-    return false;
 }
 
 // Routes
@@ -296,8 +311,7 @@ app.get('/concepts/:url', function (req, res) {
         connectToDatabase,
         getSourceInformation,
         async.apply(getConceptsFromArticleUrl, articleUrl),
-        getRelatedArticlesByScoredConcepts,
-        sortArticles
+        getArticles
     ], function asyncComplete(error, result) {
         if (error) {
             console.log(error);
@@ -305,11 +319,6 @@ app.get('/concepts/:url', function (req, res) {
         }
 
         var json = JSON.stringify(result);
-
-        res.writeHead(200, {
-            'content-type':'application/json',
-            'content-length': Buffer.byteLength(json)
-        });
 
         return res.send(json);
     });

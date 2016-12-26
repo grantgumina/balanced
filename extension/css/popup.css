@@ -1,3 +1,12 @@
 html, body {
     width: 400px;
 }
+
+#other-recommended-articles {
+    display: none;
+}
+
+.toggle {
+    cursor: pointer;
+    color: blue;
+}

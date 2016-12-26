@@ -1,3 +1,7 @@
+var vm = new Vue({
+  // options
+});
+
 function getCurrentTabUrl(callback) {
     var queryInfo = {
         active: true,
@@ -11,6 +15,11 @@ function getCurrentTabUrl(callback) {
     });
 }
 
+function toggleMoreRecommendedArticles() {
+    var moreRecommenededArticlesToggle = document.getElementById('more-recommeneded-articles-toggle');
+
+}
+
 function openLink() {
     var href = this.href;
     chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
@@ -19,12 +28,10 @@ function openLink() {
     });
 }
 
-function renderOtherArticles(articlesJSON) {
+function sortedArticlesByNewsSite(articles) {
     var sortedArticles = {};
-
-    // Sort articles by news site
-    for (var i = 0; i < articlesJSON.length; i++) {
-        var article = articlesJSON[i];
+    for (var i = 0; i < articles.length; i++) {
+        var article = articles[i];
         console.log(article);
 
         if (!sortedArticles[article['source_name']]) {
@@ -34,27 +41,81 @@ function renderOtherArticles(articlesJSON) {
         sortedArticles[article['source_name']].push(article);
     }
 
-    for (var key in sortedArticles) {
-        var articles = sortedArticles[key]
+    return sortedArticles;
+}
 
-        var title = '<h3>' + key + '</h3>';
-        document.getElementById('otherArticles').innerHTML += title;
+function renderRecommendedArticles(recommendedArticles) {
+    var topRecommenededArticleDiv = document.getElementById('top-recommended-article');
+    var otherRecommendedArticlesDiv = document.getElementById('other-recommended-articles-toggle');
 
-        for (var i = 0; i < articles.length; i++) {
-            var article = articles[i];
+    var topRecommenededArticle = recommendedArticles[0];
+    var otherRecommendedArticles = recommendedArticles.slice(1, recommendedArticles.length);
+    var sortedRecommendedArticles = sortedArticlesByNewsSite(otherRecommendedArticles);
+
+    // Add recommended article
+    var titleHTML = '<h3><a href="' + topRecommenededArticle['url'] + '">' +
+        topRecommenededArticle['source_name'] + ': ' +
+        topRecommenededArticle['title'] +
+    '</a></h3>';
+    var readableDate = moment(topRecommenededArticle['date']).format('MM/DD/YYYY');
+    var subTitleHTML = '<h5>' + readableDate + '</h5>'
+
+    topRecommenededArticleDiv.innerHTML += '<h2>Recommended Article</h2>'
+    topRecommenededArticleDiv.innerHTML += titleHTML;
+    topRecommenededArticleDiv.innerHTML += subTitleHTML;
+
+    otherRecommendedArticlesDiv.innerHTML += '<span class="toggle" id="more-recommeneded-articles-toggle">(+) Show More Recommendations</span>';
+    otherRecommendedArticlesDiv.addEventListener('click', toggleMoreRecommendedArticles);
+
+    otherRecommendedArticlesDiv.innerHTML += '<h2>More Recommended Articles</h2>'
+
+    for (var sourceNameAsKey in sortedRecommendedArticles) {
+        var sortedArticles = sortedRecommendedArticles[sourceNameAsKey];
+
+        var title = '<h3>' + sourceNameAsKey + '</h3>';
+        otherRecommendedArticlesDiv.innerHTML += title;
+
+        for (var i = 0; i < sortedArticles.length; i++) {
+            var article = sortedArticles[i];
 
             var readableDate = moment(article['date']).format('MM/DD/YYYY');
             var link = '<a href="' + article['url'] + '">' + article['title'] +
             ' (' + readableDate + ')</a><br/>';
-            document.getElementById('otherArticles').innerHTML += link;
+            otherRecommendedArticlesDiv.innerHTML += link;
         }
     }
+}
+
+function renderSimilarArticles(similarArticles) {
+}
+
+function renderArticles(articlesJSON) {
+
+    var recommendedArticles = articlesJSON['recommended'];
+    var similarArticles = articlesJSON['similar'];
+    var sortedArticles = {};
+
+    if (recommendedArticles.length == 0) {
+        return;
+    }
+
+    renderRecommendedArticles(recommendedArticles);
+
+    if (similarArticles.length == 0) {
+        return;
+    }
+
+    renderSimilarArticles(similarArticles);
 
     var hrefs = document.getElementsByTagName("a");
 
     for (var i=0,a; a=hrefs[i]; ++i) {
         hrefs[i].addEventListener('click', openLink);
     }
+}
+
+function renderBlankState() {
+    document.getElementById('no-articles').innerHTML = "<h2>Couldn't find related articles</h2>";
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -72,12 +133,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (xhr.status == 200) {
                     var result = xhr.responseText;
                     var json = JSON.parse(result);
-                    renderOtherArticles(json);
+
+                    if (json['recommended'].length == 0 && json['similar'].length == 0) {
+                        return renderBlankState();
+                    }
+
+                    renderArticles(json);
                 }
             }
         };
 
         xhr.send();
 
+        console.log("SENT");
     });
 });
