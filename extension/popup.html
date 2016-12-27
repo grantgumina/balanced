@@ -4,16 +4,69 @@
     <script type="text/javascript" src="js/moment.js"></script>
     <script type="text/javascript" src="js/vue.js"></script>
     <script type="text/javascript" src="js/popup.js"></script>
-
     <link rel="stylesheet" type="text/css" href="css/popup.css">
 </head>
 <body>
+    <div class="container-fluid" id="application">
+        <div id="top-recommended-article" v-if="topRecommendedArticle != null">
+            <h3>Recommended</h3>
+            <ul>
+                <li>
+                    <a @click="openLink(topRecommendedArticle.url)"
+                        v-bind:href="topRecommendedArticle.url">
+                        <strong>{{topRecommendedArticle.source_name}}</strong>: {{topRecommendedArticle.title}}
+                    </a>
+                </li>
+            </ul>
+        </div>
 
+        <!-- More recommended articles -->
+        <div id="other-recommended-articles" >
+            <!-- More recommended articles button -->
+            <div @click="toggleMoreRecommendedArticles()" v-if="!showMoreRecommendedArticles">
+                <span class="toggle">(+) More Recommended Articles</span>
+            </div>
 
-    <div id="no-articles"></div>
-    <div id="top-recommended-article"></div>
-    <div id="other-recommended-articles-toggle"></div>
-    <div id="other-recommended-articles"></div>
-    <div id="similar-articles"></div>
+            <!-- More recommended articles -->
+            <ul v-for="article in otherRecommendedArticles" v-if="showMoreRecommendedArticles">
+                <li>
+                    <a @click="openLink(article.url)"
+                        target="_blank"
+                        v-bind:href="article.url"><strong>{{article.source_name}}</strong>: {{article.title}}
+                    </a>
+                </li>
+            </ul>
+
+            <!-- Less recommended articles button -->
+            <div @click="toggleMoreRecommendedArticles()" v-if="showMoreRecommendedArticles">
+                <span class="toggle">(-) Less Recommended Articles</span>
+            </div>
+        </div>
+
+        <!-- Similar articles -->
+        <div id="similar-articles">
+            <!-- More similar articles button -->
+            <div @click="toggleSimilarArticles()" v-if="!showSimilarArticles">
+                <span class="toggle">(+) Show Similar Articles</span>
+            </div>
+
+            <div v-if="showSimilarArticles">
+                <h3>Similar to this article</h3>
+                <ul v-for="article in similarArticles">
+                    <li>
+                        <a @click="openLink(article.url)"
+                            v-bind:href="article.url">
+                            <strong>{{article.source_name}}</strong>: {{article.title}}
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Less similar articles button -->
+            <div @click="toggleSimilarArticles()" v-if="showSimilarArticles">
+                <span class="toggle">(-) Hide Similar Articles</span>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

@@ -3,7 +3,7 @@ html, body {
 }
 
 #other-recommended-articles {
-    display: none;
+    /*display: none;*/
 }
 
 .toggle {
