@@ -27,16 +27,20 @@ def execute_sql_query(sql_query_string, *args, **kwargs):
 
     results = None
 
-    if parameter_tuple is not None:
-        cursor.execute(sql_query_string, (parameter_tuple,))
+    try:
+        if parameter_tuple is not None:
+            cursor.execute(sql_query_string, (parameter_tuple,))
+        else:
+            cursor.execute(sql_query_string)
 
-    else:
-        cursor.execute(sql_query_string)
+        connection.commit()
 
-    connection.commit()
+        if return_data is not None and return_data == True:
+            results = cursor.fetchall()
 
-    if return_data is not None and return_data == True:
-        results = cursor.fetchall()
+    except Exception as e:
+        print("Failed to insert row: {}".format(parameter_tuple))
+        print(e)
 
     cursor.close()
     connection.close()

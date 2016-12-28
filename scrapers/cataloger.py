@@ -16,21 +16,11 @@ er = EventRegistry()
 conservative_news_sources, right_leaning_news_sources, moderate_news_sources, left_leaning_news_sources, liberal_news_sources, international_news_sources = ["Breitbart", "National Review Online", "The Blaze", "Daily Caller", "Washington Examiner", "Fox News"], ["The Wall Street Journal", "The Economist"], ["Forbes"], ["CNN", "New York Times", "The Washington Post", "NBC News", "ABC News", "CBS News", "Reuters", "Bloomberg", "USA Today"], ["Mother Jones", "Salon", "Slate"], ["www.aljazeera.com", "BBC", "RT English", "The Guardian", "The Intercept"]
 news_sources = { 'conservative': conservative_news_sources, 'right_leaning': right_leaning_news_sources, 'moderate': moderate_news_sources, 'left_leaning': left_leaning_news_sources, 'liberal': liberal_news_sources }
 
-# WHAT THE FUCK IS GOING ON HERE?
-# FUCK IT ALL TO HELL
-# for political_affiliation, news_source_for_political_affiliation in news_sources.iteritems():
-#     sql_query_string = "SELECT display_name FROM news_sources WHERE political_affiliation = '{}';".format(political_affiliation)
-#
-#     results = execute_sql_query(sql_query_string, return_data=True)
-#
-#     for r in results:
-#         news_source_for_political_affiliation.append(r[0])
-
 for key in news_sources:
     for ns in news_sources[key]:
 
         q = QueryArticles()
-        q.setDateLimit(datetime.date(2016, 12, 22), datetime.date(2016, 12, 22))
+        q.setDateLimit(datetime.date(2016, 12, 23), datetime.date(2016, 12, 27))
         q.addNewsSource(er.getNewsSourceUri(ns))
 
         # Get some articles from each news soruce
@@ -55,7 +45,13 @@ for key in news_sources:
                 values_tuple = (r['title'], r['body'], r['url'], r['uri'], r['eventUri'], date_object, r['source']['title'], r['source']['uri'], r['source']['id'])
 
                 # Get the ID of the newly inserted article
-                newly_inserted_article_id = execute_sql_query(sql_query_string, parameter_tuple=values_tuple, return_data=True)[0][0]
+                execution_result = execute_sql_query(sql_query_string, parameter_tuple=values_tuple, return_data=True)
+
+                # If the article was a duplicate or some error happened
+                if execution_result == None:
+                    continue
+
+                newly_inserted_article_id = execution_result[0][0]
 
                 print("Inserted article: {} from {}".format(r['title'], r['source']['title']))
 
