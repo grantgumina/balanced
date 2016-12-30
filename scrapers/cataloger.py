@@ -6,8 +6,6 @@ import json
 import time
 import sys
 
-number_of_articles_to_retrieve = 10
-
 sql_query_string = "INSERT INTO articles (title, body, url, uri, event_uri, date, source_name, source_url, source_id) VALUES %s RETURNING id"
 concepts_sql_query_string = "INSERT INTO concepts (name, score, event_registry_id, event_registry_uri, article_id) VALUES %s"
 
@@ -16,11 +14,19 @@ er = EventRegistry()
 conservative_news_sources, right_leaning_news_sources, moderate_news_sources, left_leaning_news_sources, liberal_news_sources, international_news_sources = ["Breitbart", "National Review Online", "The Blaze", "Daily Caller", "Washington Examiner", "Fox News"], ["The Wall Street Journal", "The Economist"], ["Forbes"], ["CNN", "New York Times", "The Washington Post", "NBC News", "ABC News", "CBS News", "Reuters", "Bloomberg", "USA Today"], ["Mother Jones", "Salon", "Slate"], ["www.aljazeera.com", "BBC", "RT English", "The Guardian", "The Intercept"]
 news_sources = { 'conservative': conservative_news_sources, 'right_leaning': right_leaning_news_sources, 'moderate': moderate_news_sources, 'left_leaning': left_leaning_news_sources, 'liberal': liberal_news_sources }
 
+start_datetime = ''
+end_datetime = datetime.datetime.now()
+
+# Read time file
+with open('start_datetime.txt', 'r') as f:
+    content = f.read().strip()
+    start_datetime = datetime.datetime.strptime(content, "%Y-%m-%d %H:%M:%S.%f")
+
 for key in news_sources:
     for ns in news_sources[key]:
 
         q = QueryArticles()
-        q.setDateLimit(datetime.date(2016, 12, 23), datetime.date(2016, 12, 27))
+        q.setDateLimit(start_datetime, end_datetime)
         q.addNewsSource(er.getNewsSourceUri(ns))
 
         # Get some articles from each news soruce
@@ -71,3 +77,8 @@ for key in news_sources:
                     print("Inserted concept: {}".format(name))
 
                 print("{} requests remaining\n\n".format(er.getRemainingAvailableRequests()))
+
+
+print("Finished downloading articles. Saving new start time for next job.")
+with open('start_datetime.txt', 'w') as f:
+    f.write(str(end_datetime))
