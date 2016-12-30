@@ -5,6 +5,9 @@ import psycopg2
 import json
 import time
 import sys
+import os
+
+CURRENT_DIR = os.path.dirname(__file__)
 
 sql_query_string = "INSERT INTO articles (title, body, url, uri, event_uri, date, source_name, source_url, source_id) VALUES %s RETURNING id"
 concepts_sql_query_string = "INSERT INTO concepts (name, score, event_registry_id, event_registry_uri, article_id) VALUES %s"
@@ -17,10 +20,13 @@ news_sources = { 'conservative': conservative_news_sources, 'right_leaning': rig
 start_datetime = ''
 end_datetime = datetime.datetime.now()
 
+print('Reading start time file')
 # Read time file
-with open('start_datetime.txt', 'r') as f:
+start_datetime_file = os.path.join(CURRENT_DIR, 'start_datetime.txt')
+with open(start_datetime_file, 'r') as f:
     content = f.read().strip()
     start_datetime = datetime.datetime.strptime(content, "%Y-%m-%d %H:%M:%S.%f")
+print('Finished reading start time file')
 
 for key in news_sources:
     for ns in news_sources[key]:
@@ -79,6 +85,8 @@ for key in news_sources:
                 print("{} requests remaining\n\n".format(er.getRemainingAvailableRequests()))
 
 
-print("Finished downloading articles. Saving new start time for next job.")
-with open('start_datetime.txt', 'w') as f:
+print("Finished downloading articles.")
+print('Writing to start time file')
+with open(start_datetime_file, 'w') as f:
     f.write(str(end_datetime))
+print('Finished writing to start time file')
