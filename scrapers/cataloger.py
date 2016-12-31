@@ -20,7 +20,7 @@ news_sources = { 'conservative': conservative_news_sources, 'right_leaning': rig
 start_datetime = ''
 end_datetime = datetime.datetime.now()
 
-print('Reading start time file')
+print('Reading start time file ({})'.format(end_datetime))
 # Read time file
 start_datetime_file = os.path.join(CURRENT_DIR, 'start_datetime.txt')
 with open(start_datetime_file, 'r') as f:
@@ -90,3 +90,4 @@ print('Writing to start time file')
 with open(start_datetime_file, 'w') as f:
     f.write(str(end_datetime))
 print('Finished writing to start time file')
+print("===\n")

@@ -1,6 +1,27 @@
 http://localhost:3000/url/http%3A%2F%2Fwww.washingtonexaminer.com%2Ftrump-to-meet-with-exxon-mobil-ceo-to-discuss-secretary-of-state-position%2Farticle%2F2609350
 
 
+SELECT * FROM articles, news_sources
+                    WHERE articles.id IN (
+                        SELECT article_id
+                            FROM (
+                                SELECT *
+                                FROM concepts
+                                WHERE (
+                                    name = 'Christmas' AND score = 5)
+                                    OR (name = 'Berlin' AND score = 5)
+                                    OR (name = 'Truck' AND score = 5)
+                                )
+                            )
+                        AS arts
+                        GROUP BY article_id HAVING count(article_id) > 1
+                    )
+                    AND news_sources.display_name = articles.source_name
+                    AND news_sources.political_affiliation IN
+                        ('conservative', 'right_leaning')
+                    ORDER BY articles.date DESC;
+
+
 -- RANDOM
 -- Select related articles by concepts
 SELECT * FROM articles WHERE id in (

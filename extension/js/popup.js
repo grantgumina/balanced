@@ -7,10 +7,13 @@ window.onload = function () {
             recommendedArticles: [],
             similarArticles: [],
             showMoreRecommendedArticles: false,
-            showSimilarArticles: false
+            showSimilarArticles: false,
         },
 
         computed: {
+
+            
+
             topRecommendedArticle: function() {
                 if (this.recommendedArticles.length == 0) {
                     return null;

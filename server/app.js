@@ -256,11 +256,11 @@ function getArticles(concepts, client, done, articleUrl, sourceInformation, call
     async.parallel({
         // Get recommended articles
         recommended: function (cb) {
-            getArticlesFromSourcesWithCertainPoliticalAffiliations(client, done, conceptsFilterString, recommendedNewsSourcesString, cb);
+            getArticlesFromSourcesWithCertainPoliticalAffiliations(client, done, conceptsFilterString, recommendedNewsSourcesString, articleUrl, cb);
         },
         // Get similar articles
         similar: function (cb) {
-            getArticlesFromSourcesWithCertainPoliticalAffiliations(client, done, conceptsFilterString, similarNewsSourcesString, cb);
+            getArticlesFromSourcesWithCertainPoliticalAffiliations(client, done, conceptsFilterString, similarNewsSourcesString, articleUrl, cb);
         }
         // TODO
         // Get same articles
@@ -275,7 +275,7 @@ function getArticles(concepts, client, done, articleUrl, sourceInformation, call
     });
 }
 
-function getArticlesFromSourcesWithCertainPoliticalAffiliations(client, done, conceptsFilterString, politicalAffiliationString, callback) {
+function getArticlesFromSourcesWithCertainPoliticalAffiliations(client, done, conceptsFilterString, politicalAffiliationString, articleUrl, callback) {
     var queryString = `SELECT * FROM articles, news_sources
                         WHERE articles.id IN (
                             SELECT article_id
@@ -289,6 +289,7 @@ function getArticlesFromSourcesWithCertainPoliticalAffiliations(client, done, co
                             AS arts
                             GROUP BY article_id HAVING count(article_id) > 1
                         )
+                        AND articles.url <> '` + articleUrl + `'
                         AND news_sources.display_name = articles.source_name
                         AND news_sources.political_affiliation IN
                             (` + politicalAffiliationString + `)
