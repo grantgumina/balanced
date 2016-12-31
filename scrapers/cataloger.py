@@ -18,14 +18,16 @@ conservative_news_sources, right_leaning_news_sources, moderate_news_sources, le
 news_sources = { 'conservative': conservative_news_sources, 'right_leaning': right_leaning_news_sources, 'moderate': moderate_news_sources, 'left_leaning': left_leaning_news_sources, 'liberal': liberal_news_sources }
 
 start_datetime = ''
-end_datetime = datetime.datetime.now()
+end_datetime = convertToLocalDateTime(datetime.utcnow())
 
-print('Reading start time file ({})'.format(end_datetime))
+print('Reading start time file')
+print('end_datetime: {}'.format(end_datetime))
 # Read time file
 start_datetime_file = os.path.join(CURRENT_DIR, 'start_datetime.txt')
 with open(start_datetime_file, 'r') as f:
     content = f.read().strip()
-    start_datetime = datetime.datetime.strptime(content, "%Y-%m-%d %H:%M:%S.%f")
+    start_datetime = convertToLocalDateTime(datetime.strptime(content[:19], "%Y-%m-%d %H:%M:%S"))
+print('start_datetime: {}'.format(start_datetime))
 print('Finished reading start time file')
 
 for key in news_sources:
@@ -52,7 +54,7 @@ for key in news_sources:
                         else:
                             r[key] = convertToString(value)
 
-                date_object = datetime.datetime.strptime(r['date'], '%Y-%M-%d')
+                date_object = datetime.strptime(r['date'], '%Y-%M-%d')
 
                 values_tuple = (r['title'], r['body'], r['url'], r['uri'], r['eventUri'], date_object, r['source']['title'], r['source']['uri'], r['source']['id'])
 
@@ -88,6 +90,6 @@ for key in news_sources:
 print("Finished downloading articles.")
 print('Writing to start time file')
 with open(start_datetime_file, 'w') as f:
-    f.write(str(end_datetime))
+    f.write(str(convertToUTCDateTime(end_datetime)))
 print('Finished writing to start time file')
 print("===\n")

@@ -1,3 +1,4 @@
 six
 eventregistry
 psycopg2
+python-dateutil
