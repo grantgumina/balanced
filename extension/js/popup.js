@@ -12,7 +12,7 @@ window.onload = function () {
 
         computed: {
 
-            
+
 
             topRecommendedArticle: function() {
                 if (this.recommendedArticles.length == 0) {
@@ -87,7 +87,7 @@ window.onload = function () {
                     // Ask server for related stories
                     var xhr = new XMLHttpRequest();
 
-                    xhr.open("GET", "http://localhost:3000/concepts/" + encodedUrl, true);
+                    xhr.open("GET", "http://104.40.72.186:3000/concepts/" + encodedUrl, true);
 
                     xhr.onreadystatechange = function() {
                         if (xhr.readyState == 4) {

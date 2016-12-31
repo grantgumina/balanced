@@ -13,7 +13,7 @@
     "permissions": [
         "tabs",
         "activeTab",
-        "http://localhost:3000/*"
+        "<all_urls>"
     ],
 
     "background": {
