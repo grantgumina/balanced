@@ -1,6 +1,10 @@
 # how to use this
 
 - install jupyter
+    ```
+    pip3 install --upgrade pip
+    pip3 install jupyter
+    ```
 - run `jupyter notebook exploration.ipynb`
 - install dependencies (I just did it globally because I'm bad)
     ```
