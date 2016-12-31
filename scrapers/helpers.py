@@ -1,5 +1,8 @@
 import psycopg2
 import sys
+import os
+
+CURRENT_DIR = os.path.dirname(__file__)
 
 def convertToString(v):
     if v is None:
@@ -11,7 +14,9 @@ def convertToString(v):
         return str(v)
 
 def execute_sql_query(sql_query_string, *args, **kwargs):
-    creds_file = open('creds.txt', 'r')
+    creds_text_path = os.path.join(CURRENT_DIR, 'creds.txt')
+    
+    creds_file = open(creds_text_path, 'r')
     lines = creds_file.read().splitlines()
     username = lines[0]
     password = lines[1]
