@@ -1,4 +1,4 @@
 creds.txt
 *.swo
 *.swp
-scrapers/start_datetime.txt
+start_datetime.txt

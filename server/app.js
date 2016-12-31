@@ -1,11 +1,12 @@
-var express = require('express')
-var async = require('async')
+var express = require('express');
+var async = require('async');
+var path = require('path');
 var url = require('url');
-var pg = require('pg')
-var fs = require('fs')
-var app = express()
+var pg = require('pg');
+var fs = require('fs');
+var app = express();
 
-var creds = fs.readFileSync('../scrapers/creds.txt').toString().split('\n');
+var creds = fs.readFileSync(path.resolve(__dirname, '../creds.txt')).toString().split('\n');
 console.log(creds);
 
 var db_username = creds[0].trim();
