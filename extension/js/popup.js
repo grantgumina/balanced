@@ -11,9 +11,6 @@ window.onload = function () {
         },
 
         computed: {
-
-
-
             topRecommendedArticle: function() {
                 if (this.recommendedArticles.length == 0) {
                     return null;
@@ -83,31 +80,16 @@ window.onload = function () {
                 var main = this;
                 this.getCurrentTabUrl(function(url) {
                     var encodedUrl = encodeURIComponent(url);
-
-                    // Ask server for related stories
-                    var xhr = new XMLHttpRequest();
-
-                    xhr.open("GET", "http://104.40.72.186:3000/concepts/" + encodedUrl, true);
-
-                    xhr.onreadystatechange = function() {
-                        if (xhr.readyState == 4) {
-                            if (xhr.status == 200) {
-                                var result = xhr.responseText;
-                                var json = JSON.parse(result);
-
-                                main.recommendedArticles = json['recommended'];
-                                main.similarArticles = json['similar'];
-                            }
-                        }
-                    };
-
-                    xhr.send();
-
+                    chrome.tabs.query({ active: true, lastFocusedWindow: true }, function(tabs) {
+                        chrome.tabs.sendMessage(tabs[0].id, { action: 'sendArticles' }, function(response) {
+                            main.recommendedArticles = response.recommended;
+                            main.similarArticles = response.similar;
+                        });
+                    });
                 });
             },
         }
     });
 
     vm.loadData();
-
 }
