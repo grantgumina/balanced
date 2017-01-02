@@ -8,7 +8,7 @@ chrome.runtime.sendMessage({
     chrome.runtime.sendMessage({
         method: 'GET',
         action: 'xhttp',
-        url: 'http://localhost:3000/concepts/' + encodedUrl,
+        url: 'http://104.40.72.186:3000/concepts/' + encodedUrl,
     }, function(res) {
         articlesJSON = res;
         console.log(articlesJSON);
