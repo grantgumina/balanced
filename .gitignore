@@ -2,3 +2,4 @@ creds.txt
 *.swo
 *.swp
 start_datetime.txt
+*.pyc
