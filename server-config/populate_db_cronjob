@@ -1,1 +1,1 @@
-*/15 * * * * . /home/balanced/populate_db_every_15_minutes.sh >> /home/balanced/log.txt 2>&1
+0 * * * * . /home/balanced/populate_db_every_hour.sh >> /home/balanced/log.txt 2>&1
