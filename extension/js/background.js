@@ -1,11 +1,3 @@
-// Get tab URL for content script
-// chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
-//     // wait for document to load
-//     if (changeInfo.status == 'complete') {
-//
-//     }
-// });
-
 // Make HTTP request on content script's behalf
 chrome.runtime.onMessage.addListener(function(request, sender, callback) {
     console.log(request.action);
