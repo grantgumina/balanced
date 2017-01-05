@@ -1,28 +1,26 @@
-from datetime import datetime
-from dateutil import tz
 import psycopg2
 import sys
 import os
 
 CURRENT_DIR = os.path.dirname(__file__)
 
-def convertToLocalDateTime(utc_datetime):
-    from_zone = tz.tzutc()
-    to_zone = tz.tzlocal()
-
-    return convertTimeZone(utc_datetime, from_zone, to_zone)
-
-def convertToUTCDateTime(local_datetime):
-    from_zone = tz.tzlocal()
-    to_zone = tz.tzutc()
-
-    return convertTimeZone(local_datetime, from_zone, to_zone)
-
-def convertTimeZone(original_datetime, from_zone, to_zone):
-    original_datetime = original_datetime.replace(tzinfo=from_zone)
-    new_datetime = original_datetime.astimezone(to_zone)
-
-    return new_datetime
+# def convertToLocalDateTime(utc_datetime):
+#     from_zone = tz.tzutc()
+#     to_zone = tz.tzlocal()
+#
+#     return convertTimeZone(utc_datetime, from_zone, to_zone)
+#
+# def convertToUTCDateTime(local_datetime):
+#     from_zone = tz.tzlocal()
+#     to_zone = tz.tzutc()
+#
+#     return convertTimeZone(local_datetime, from_zone, to_zone)
+#
+# def convertTimeZone(original_datetime, from_zone, to_zone):
+#     original_datetime = original_datetime.replace(tzinfo=from_zone)
+#     new_datetime = original_datetime.astimezone(to_zone)
+#
+#     return new_datetime
 
 def convertToString(v):
     if v is None:

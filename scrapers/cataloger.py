@@ -1,9 +1,9 @@
 from collections import defaultdict
 from eventregistry import *
+from time import sleep
 from helpers import *
 import psycopg2
 import json
-import time
 import sys
 import os
 
@@ -17,24 +17,24 @@ er = EventRegistry()
 conservative_news_sources, right_leaning_news_sources, moderate_news_sources, left_leaning_news_sources, liberal_news_sources, international_news_sources = ["Breitbart", "National Review Online", "The Blaze", "Daily Caller", "Washington Examiner", "Fox News"], ["The Wall Street Journal", "The Economist"], ["Forbes"], ["CNN", "New York Times", "The Washington Post", "NBC News", "ABC News", "CBS News", "Reuters", "Bloomberg", "USA Today"], ["Mother Jones", "Salon", "Slate"], ["www.aljazeera.com", "BBC", "RT English", "The Guardian", "The Intercept"]
 news_sources = { 'conservative': conservative_news_sources, 'right_leaning': right_leaning_news_sources, 'moderate': moderate_news_sources, 'left_leaning': left_leaning_news_sources, 'liberal': liberal_news_sources }
 
-start_datetime = ''
-end_datetime = convertToLocalDateTime(datetime.utcnow())
+start_date = ''
+end_date = datetime.datetime.now().date()
 
 print('Reading start time file')
-print('end_datetime: {}'.format(end_datetime))
 # Read time file
 start_datetime_file = os.path.join(CURRENT_DIR, 'start_datetime.txt')
 with open(start_datetime_file, 'r') as f:
     content = f.read().strip()
-    start_datetime = convertToLocalDateTime(datetime.strptime(content[:19], "%Y-%m-%d %H:%M:%S"))
-print('start_datetime: {}'.format(start_datetime))
+    start_date = datetime.datetime.strptime(content, "%Y-%m-%d").date()
+print('start_datetime: {}'.format(start_date))
+print('end_datetime:   {}'.format(end_date))
 print('Finished reading start time file')
 
 for key in news_sources:
     for ns in news_sources[key]:
 
         q = QueryArticles()
-        q.setDateLimit(start_datetime, end_datetime)
+        q.setDateLimit(start_date, end_date)
         q.addNewsSource(er.getNewsSourceUri(ns))
 
         # Get some articles from each news soruce
@@ -54,7 +54,7 @@ for key in news_sources:
                         else:
                             r[key] = convertToString(value)
 
-                date_object = datetime.strptime(r['date'], '%Y-%M-%d')
+                date_object = datetime.datetime.strptime(r['date'], '%Y-%M-%d')
 
                 values_tuple = (r['title'], r['body'], r['url'], r['uri'], r['eventUri'], date_object, r['source']['title'], r['source']['uri'], r['source']['id'])
 
@@ -85,11 +85,12 @@ for key in news_sources:
                     print("Inserted concept: {}".format(name))
 
                 print("{} requests remaining\n\n".format(er.getRemainingAvailableRequests()))
+                sleep(3) # wait 3 seconds for the next request
 
 
 print("Finished downloading articles.")
 print('Writing to start time file')
 with open(start_datetime_file, 'w') as f:
-    f.write(str(convertToUTCDateTime(end_datetime)))
+    f.write(str(end_date))
 print('Finished writing to start time file')
 print("===\n")
