@@ -20,15 +20,11 @@ news_sources = { 'conservative': conservative_news_sources, 'right_leaning': rig
 start_date = ''
 end_date = datetime.datetime.now().date()
 
-print('Reading start time file')
 # Read time file
 start_datetime_file = os.path.join(CURRENT_DIR, 'start_datetime.txt')
 with open(start_datetime_file, 'r') as f:
     content = f.read().strip()
     start_date = datetime.datetime.strptime(content, "%Y-%m-%d").date()
-print('start_datetime: {}'.format(start_date))
-print('end_datetime:   {}'.format(end_date))
-print('Finished reading start time file')
 
 for key in news_sources:
     for ns in news_sources[key]:
@@ -67,12 +63,8 @@ for key in news_sources:
 
                 newly_inserted_article_id = execution_result[0][0]
 
-                print("Inserted article: {} from {}".format(r['title'], r['source']['title']))
-
                 # Insert keywords into database
                 concepts = r['concepts']
-
-                print("Iterating through concepts")
 
                 for c in concepts:
                     name = convertToString(c['label'].values()[0])
@@ -82,15 +74,15 @@ for key in news_sources:
 
                     concepts_tuple = (name, score, concept_id, curi, newly_inserted_article_id)
                     execute_sql_query(concepts_sql_query_string, parameter_tuple=concepts_tuple)
-                    print("Inserted concept: {}".format(name))
 
-                print("{} requests remaining\n\n".format(er.getRemainingAvailableRequests()))
                 sleep(3) # wait 3 seconds for the next request
 
 
-print("Finished downloading articles.")
-print('Writing to start time file')
+print("Finished inserting articles.")
+print("Start Date: {}".format(start_date))
+print("End Date: {}".format(end_date))
 with open(start_datetime_file, 'w') as f:
     f.write(str(end_date))
-print('Finished writing to start time file')
+print("{} requests remaining\n\n".format(er.getRemainingAvailableRequests()))
+print(datetime.datetime.now())
 print("===\n")
