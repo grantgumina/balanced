@@ -3,9 +3,15 @@ chrome.runtime.onMessage.addListener(function(request, sender, callback) {
     console.log(request.action);
     if (request.action == 'sendTabUrl') {
         chrome.tabs.query({ active: true, lastFocusedWindow: true }, function(tabs) {
-            callback(tabs[0].url);
+            // callback(tabs[0].url);
+
+            // receiveTabUrl
+            chrome.tabs.sendMessage(tabs[0].id, { action: 'receiveTabUrl', url: tabs[0].url });
         });
 
+        return true;
+    } else if (request.action == 'setBadgeText') {
+        chrome.browserAction.setBadgeText({ text: '' + request.number, tabId: sender.tab.id });
         return true;
     } else if (request.action == "xhttp") {
         var xhttp = new XMLHttpRequest();

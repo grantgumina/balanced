@@ -11,3 +11,7 @@ html, body {
     cursor: pointer;
     color: blue;
 }
+
+.container-fluid {
+    margin-right: 10px;
+}

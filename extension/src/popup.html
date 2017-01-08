@@ -9,9 +9,9 @@
 <body>
     <div class="container-fluid" id="application">
         <div id="no-articles" v-if="recommendedArticles.length == 0 && similarArticles.length == 0">
-            <h3>We don't have any articles to show you right now.</h3>
+            <h3>There aren't any articles to show you right now.</h3>
         </div>
-        
+
         <div id="top-recommended-article" v-if="topRecommendedArticle != null">
             <h3>Recommended</h3>
             <ul>

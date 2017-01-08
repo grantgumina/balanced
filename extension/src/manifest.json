@@ -1,6 +1,7 @@
 {
     "manifest_version": 2,
-    "name": "Balanced",
+    "name": "Balanced [BETA]",
+    "short_name": "Balanced [BETA]",
     "version": "0.1",
 
     "description": "A plain text description",
@@ -38,7 +39,8 @@
     }],
 
     "icons": {
-        "16": "img/yingyang_16.png",
-        "128": "img/yingyang_128.png"
+        "16": "img/yinyang_16.png",
+        "48": "img/yinyang_48.png",
+        "128": "img/yinyang_128.png"
     }
 }
