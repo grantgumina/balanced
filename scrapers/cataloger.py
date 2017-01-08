@@ -77,7 +77,6 @@ for key in news_sources:
 
                 sleep(3) # wait 3 seconds for the next request
 
-
 print("Finished inserting articles.")
 print("Start Date: {}".format(start_date))
 print("End Date: {}".format(end_date))
