@@ -1,3 +1,5 @@
+.thumbs
+.DS_Store
 creds.txt
 *.swo
 *.swp
