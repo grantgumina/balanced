@@ -14,6 +14,7 @@ chrome.extension.onMessage.addListener(function(request, sender, sendResponse) {
         chrome.runtime.sendMessage({
             method: 'GET',
             action: 'xhttp',
+            // url: 'http://localhost:3000/concepts/' + encodedUrl,
             url: 'http://40.78.99.54:3000/concepts/' + encodedUrl,
         }, function (res) {
             articlesJSON = res;

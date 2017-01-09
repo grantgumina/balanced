@@ -56,13 +56,6 @@ window.onload = function () {
                 return sortedArticles;
             },
 
-            openLink: function(href) {
-                chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
-                    var tab = tabs[0];
-                    chrome.tabs.create({ url: href });
-                });
-            },
-
             getCurrentTabUrl: function(callback) {
                 var queryInfo = {
                     active: true,

@@ -17,7 +17,7 @@ var config = {
     user: db_username,
     database: db_name,
     password: db_password,
-    host: 'localhost',
+    host: '40.78.99.54',
     port: 5432,
     max: 10,
     idleTimeoutMillis: 30000,
@@ -272,6 +272,7 @@ function getArticles(concepts, client, done, articleUrl, sourceInformation, call
         if (error) {
             return callback(error);
         }
+
         callback(null, articlesJSON);
     });
 }
