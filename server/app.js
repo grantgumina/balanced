@@ -274,6 +274,8 @@ function getArticles(concepts, client, done, articleUrl, sourceInformation, call
         done();
 
         if (error) {
+            console.log('ASYNC COMPLETE - getArticles - ERROR');
+            console.log(error);
             return callback(error);
         }
 
@@ -324,10 +326,11 @@ app.get('/concepts/:url', function (req, res) {
         async.apply(getConceptsFromArticleUrl, articleUrl),
         getArticles
     ], function asyncComplete(error, result) {
+
         if (error) {
             console.log("ERROR");
-            console.log(error);
-            return res.send(error);
+            console.error(error);
+            return res.status(500);
         }
 
         var json = JSON.stringify(result);
