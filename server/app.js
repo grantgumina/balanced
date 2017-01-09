@@ -130,6 +130,7 @@ function buildSimilarNewsSourcesString(sourceInformation, hostname) {
 }
 
 function getSourceInformation(client, done, callback) {
+    console.log('getSourceInformation');
 
     async.parallel({
         conservative: function (cb) {
@@ -226,6 +227,8 @@ function getSourceInformation(client, done, callback) {
 }
 
 function getConceptsFromArticleUrl(articleUrl, client, done, sourceInformation, callback) {
+    console.log('getConceptsFromArticleUrl: ' + articleUrl);
+
     var queryString = `SELECT * FROM concepts WHERE article_id = (
                             SELECT id
                             FROM articles WHERE url = '` + articleUrl + `'
@@ -242,6 +245,7 @@ function getConceptsFromArticleUrl(articleUrl, client, done, sourceInformation, 
 }
 
 function getArticles(concepts, client, done, articleUrl, sourceInformation, callback) {
+    console.log('getArticles: ' + articleUrl);
 
     if (concepts.length == 0) {
         var articlesJSON = { 'recommended': [], 'similar': [], 'same': [] };
@@ -273,11 +277,15 @@ function getArticles(concepts, client, done, articleUrl, sourceInformation, call
             return callback(error);
         }
 
+        console.log('ASYNC COMPLETE - getArticles: ' + articleUrl);
+
         callback(null, articlesJSON);
     });
 }
 
 function getArticlesFromSourcesWithCertainPoliticalAffiliations(client, done, conceptsFilterString, politicalAffiliationString, articleUrl, callback) {
+    console.log('getArticlesFromSourcesWithCertainPoliticalAffiliations: ' + articleUrl);
+
     var queryString = `SELECT * FROM articles, news_sources
                         WHERE articles.id IN (
                             SELECT article_id
@@ -317,11 +325,14 @@ app.get('/concepts/:url', function (req, res) {
         getArticles
     ], function asyncComplete(error, result) {
         if (error) {
+            console.log("ERROR");
             console.log(error);
             return res.send(error);
         }
 
         var json = JSON.stringify(result);
+
+        console.log('Returning articles for: ' + articleUrl);
 
         return res.send(json);
     });
