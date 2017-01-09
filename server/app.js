@@ -28,17 +28,6 @@ pool.on('error', function (err, client) {
     console.error('idle client error', err.message, err.stack)
 })
 
-function connectToDatabase(callback) {
-    pool.connect(function (error, client, done) {
-        if (error) {
-            callback(error);
-            return;
-        }
-
-        callback(null, client, done);
-    });
-}
-
 function isHostnameAffiliated(siteNames, hostname) {
     for (var i = 0; i < siteNames.length; i++) {
         var siteName = siteNames[i];
@@ -129,12 +118,12 @@ function buildSimilarNewsSourcesString(sourceInformation, hostname) {
     return similarNewsSourcesString;
 }
 
-function getSourceInformation(client, done, callback) {
+function getSourceInformation(callback) {
     console.log('getSourceInformation');
 
     async.parallel({
         conservative: function (cb) {
-            client.query("SELECT partial_hostname, display_name FROM news_sources WHERE political_affiliation = 'conservative';",
+            pool.query("SELECT partial_hostname, display_name FROM news_sources WHERE political_affiliation = 'conservative';",
             function (error, result) {
                 if (error) {
                     return cb(error);
@@ -144,7 +133,7 @@ function getSourceInformation(client, done, callback) {
             });
         },
         right_leaning: function (cb) {
-            client.query("SELECT partial_hostname, display_name FROM news_sources WHERE political_affiliation = 'right_leaning';",
+            pool.query("SELECT partial_hostname, display_name FROM news_sources WHERE political_affiliation = 'right_leaning';",
             function (error, result) {
                 if (error) {
                     return cb(error);
@@ -154,7 +143,7 @@ function getSourceInformation(client, done, callback) {
             });
         },
         moderate: function (cb) {
-            client.query("SELECT partial_hostname, display_name FROM news_sources WHERE political_affiliation = 'moderate';",
+            pool.query("SELECT partial_hostname, display_name FROM news_sources WHERE political_affiliation = 'moderate';",
             function (error, result) {
                 if (error) {
                     return cb(error);
@@ -164,7 +153,7 @@ function getSourceInformation(client, done, callback) {
             });
         },
         left_leaning: function (cb) {
-            client.query("SELECT partial_hostname, display_name FROM news_sources WHERE political_affiliation = 'left_leaning';",
+            pool.query("SELECT partial_hostname, display_name FROM news_sources WHERE political_affiliation = 'left_leaning';",
             function (error, result) {
                 if (error) {
                     return cb(error);
@@ -175,7 +164,7 @@ function getSourceInformation(client, done, callback) {
         },
         liberal: function (cb) {
 
-            client.query("SELECT partial_hostname, display_name FROM news_sources WHERE political_affiliation = 'liberal';",
+            pool.query("SELECT partial_hostname, display_name FROM news_sources WHERE political_affiliation = 'liberal';",
             function (error, result) {
                 if (error) {
                     // done();
@@ -222,11 +211,11 @@ function getSourceInformation(client, done, callback) {
             }
         }
 
-        callback(null, client, done, returnedInfo);
+        callback(null, returnedInfo);
     });
 }
 
-function getConceptsFromArticleUrl(articleUrl, client, done, sourceInformation, callback) {
+function getConceptsFromArticleUrl(articleUrl, sourceInformation, callback) {
     console.log('getConceptsFromArticleUrl: ' + articleUrl);
 
     var queryString = `SELECT * FROM concepts WHERE article_id = (
@@ -234,17 +223,17 @@ function getConceptsFromArticleUrl(articleUrl, client, done, sourceInformation, 
                             FROM articles WHERE url = '` + articleUrl + `'
                         ) ORDER BY score DESC LIMIT 5;`;
 
-    client.query(queryString, function (error, result) {
+    pool.query(queryString, function (error, result) {
         if (error) {
             console.log("getConceptsFromArticleUrl - 2 - ERROR");
             console.log(error);
             return callback(error);
         }
-        callback(null, result.rows, client, done, articleUrl, sourceInformation);
+        callback(null, result.rows, articleUrl, sourceInformation);
     });
 }
 
-function getArticles(concepts, client, done, articleUrl, sourceInformation, callback) {
+function getArticles(concepts, articleUrl, sourceInformation, callback) {
     console.log('getArticles: ' + articleUrl);
 
     if (concepts.length == 0) {
@@ -261,17 +250,15 @@ function getArticles(concepts, client, done, articleUrl, sourceInformation, call
     async.parallel({
         // Get recommended articles
         recommended: function (cb) {
-            getArticlesFromSourcesWithCertainPoliticalAffiliations(client, done, conceptsFilterString, recommendedNewsSourcesString, articleUrl, cb);
+            getArticlesFromSourcesWithCertainPoliticalAffiliations(conceptsFilterString, recommendedNewsSourcesString, articleUrl, cb);
         },
         // Get similar articles
         similar: function (cb) {
-            getArticlesFromSourcesWithCertainPoliticalAffiliations(client, done, conceptsFilterString, similarNewsSourcesString, articleUrl, cb);
+            getArticlesFromSourcesWithCertainPoliticalAffiliations(conceptsFilterString, similarNewsSourcesString, articleUrl, cb);
         }
         // TODO
         // Get same articles
     }, function asyncComplete(error, articlesJSON) {
-
-        done();
 
         if (error) {
             console.log('ASYNC COMPLETE - getArticles - ERROR');
@@ -285,7 +272,7 @@ function getArticles(concepts, client, done, articleUrl, sourceInformation, call
     });
 }
 
-function getArticlesFromSourcesWithCertainPoliticalAffiliations(client, done, conceptsFilterString, politicalAffiliationString, articleUrl, callback) {
+function getArticlesFromSourcesWithCertainPoliticalAffiliations(conceptsFilterString, politicalAffiliationString, articleUrl, callback) {
     console.log('getArticlesFromSourcesWithCertainPoliticalAffiliations: ' + articleUrl);
 
     var queryString = `SELECT * FROM articles, news_sources
@@ -307,7 +294,7 @@ function getArticlesFromSourcesWithCertainPoliticalAffiliations(client, done, co
                             (` + politicalAffiliationString + `)
                         ORDER BY articles.date DESC;`;
 
-    client.query(queryString, function (error, result) {
+    pool.query(queryString, function (error, result) {
         if (error) {
             return callback(error);
         }
@@ -321,7 +308,6 @@ app.get('/concepts/:url', function (req, res) {
     var articleUrl = '' + req.params.url + '';
 
     async.waterfall([
-        connectToDatabase,
         getSourceInformation,
         async.apply(getConceptsFromArticleUrl, articleUrl),
         getArticles
@@ -343,7 +329,6 @@ app.get('/concepts/:url', function (req, res) {
 
 app.get('/', function (req, res) {
     async.waterfall([
-        connectToDatabase,
         getRandomEventUri,
         getRelatedArticlesByEventId
     ], function asyncComplete(error, result) {
