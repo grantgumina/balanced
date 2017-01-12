@@ -3,6 +3,10 @@ html, body {
     padding: 3px;
 }
 
+#information {
+    float: right;
+}
+
 #other-recommended-articles {
     /*display: none;*/
 }
@@ -14,4 +18,14 @@ html, body {
 
 .container-fluid {
     margin-right: 10px;
+}
+
+li.extension-info {
+    display: inline;
+    color: rgb(157, 157, 157);
+    cursor: pointer;
+}
+
+.extension-info a {
+    color: rgb(157, 157, 157);
 }

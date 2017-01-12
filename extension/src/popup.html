@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <script src="js/mixpanel.js"></script>
     <script type="text/javascript" src="js/moment.js"></script>
     <script type="text/javascript" src="js/vue.js"></script>
     <script type="text/javascript" src="js/popup.js"></script>
@@ -67,6 +68,14 @@
             <div @click="toggleSimilarArticles()" v-if="showSimilarArticles">
                 <span class="toggle">(-) Hide Similar Articles</span>
             </div>
+        </div>
+
+        <!-- Information -->
+        <div id="information">
+            <ul>
+                <li @click="openUrl('https://medium.com/@grantgumina/balanced-df0437526e60')" class="extension-info"><a tabindex="-1">About</a> | </li>
+                <li @click="openUrl('https://github.com/grantgumina/balanced/issues')" class="extension-info"><a tabindex="-1">File a Bug</a></li>
+            </ul>
         </div>
     </div>
 </body>

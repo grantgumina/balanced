@@ -69,16 +69,24 @@ window.onload = function () {
                 });
             },
 
+            openUrl: function(href) {
+                chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+                    var tab = tabs[0];
+                    chrome.tabs.create({ url: href });
+                });
+            },
+
             loadData: function() {
                 var main = this;
                 this.getCurrentTabUrl(function(url) {
                     var encodedUrl = encodeURIComponent(url);
-
                     // Ask content.js for articles
                     chrome.tabs.query({ active: true, lastFocusedWindow: true }, function(tabs) {
                         chrome.tabs.sendMessage(tabs[0].id, { action: 'sendArticles' }, function(response) {
-                            main.recommendedArticles = response['recommended'];
-                            main.similarArticles = response['similar'];
+                            if (response) {
+                                main.recommendedArticles = response['recommended'];
+                                main.similarArticles = response['similar'];
+                            }
                         });
                     });
                 });

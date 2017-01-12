@@ -327,9 +327,9 @@ app.get('/concepts/:url', function (req, res) {
     });
 });
 
-app.get('/', function (req, res) {
+app.get('/random', function (req, res) {
     async.waterfall([
-        getRandomEventUri,
+        getRandomArticles,
         getRelatedArticlesByEventId
     ], function asyncComplete(error, result) {
         if (error) {
