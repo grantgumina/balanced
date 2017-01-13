@@ -15,7 +15,7 @@
 
         <div id="top-recommended-article" v-if="topRecommendedArticle != null">
             <h3>Recommended</h3>
-            <ul>
+            <ul class="article-list">
                 <li>
                     <a v-bind:href="topRecommendedArticle.url" target="_blank">
                         <strong>{{topRecommendedArticle.source_name}}</strong>: {{topRecommendedArticle.title}}
@@ -32,7 +32,7 @@
             </div>
 
             <!-- More recommended articles -->
-            <ul v-for="article in otherRecommendedArticles" v-if="showMoreRecommendedArticles">
+            <ul class="article-list" v-for="article in otherRecommendedArticles" v-if="showMoreRecommendedArticles">
                 <li>
                     <a target="_blank" v-bind:href="article.url">
                         <strong>{{article.source_name}}</strong>: {{article.title}}
@@ -55,7 +55,7 @@
 
             <div v-if="showSimilarArticles">
                 <h3>Similar to this article</h3>
-                <ul v-for="article in similarArticles">
+                <ul class="article-list" v-for="article in similarArticles">
                     <li>
                         <a v-bind:href="article.url" target="_blank">
                             <strong>{{article.source_name}}</strong>: {{article.title}}

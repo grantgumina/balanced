@@ -18,6 +18,7 @@ var config = {
     database: db_name,
     password: db_password,
     host: 'localhost',
+    // host: '40.78.99.54',
     port: 5432,
     max: 10,
     idleTimeoutMillis: 30000,

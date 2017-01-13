@@ -5,10 +5,19 @@ html, body {
 
 #information {
     float: right;
+    margin-right: 10px;
 }
 
 #other-recommended-articles {
     /*display: none;*/
+}
+
+.article-list {
+    padding-left: 10px;
+}
+
+.article-list li {
+    list-style: none;
 }
 
 .toggle {
