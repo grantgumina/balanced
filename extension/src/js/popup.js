@@ -8,6 +8,7 @@ window.onload = function () {
             similarArticles: [],
             showMoreRecommendedArticles: false,
             showSimilarArticles: false,
+            showFirstRunExperience: false
         },
 
         computed: {

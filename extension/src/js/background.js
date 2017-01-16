@@ -33,3 +33,11 @@ chrome.runtime.onMessage.addListener(function(request, sender, callback) {
         return true; // prevents the callback from being called too early on return
     }
 });
+
+// Store version number into local storage for FRE
+chrome.runtime.onInstalled.addListener(function(details) {
+    if(details.reason == "install"){
+        chrome.tabs.create({ url: 'http://www.grantgumina.com/projects/balanced' })
+    } else if(details.reason == "update"){
+    }
+});
