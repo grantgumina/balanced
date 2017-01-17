@@ -8,7 +8,7 @@ SELECT * FROM articles, news_sources
                                 SELECT *
                                 FROM concepts
                                 WHERE (
-                                    name = 'Christmas' AND score = 5)
+                                    (name = 'Christmas' AND score = 5)
                                     OR (name = 'Berlin' AND score = 5)
                                     OR (name = 'Truck' AND score = 5)
                                 )

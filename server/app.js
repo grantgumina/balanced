@@ -1,4 +1,5 @@
 var express = require('express');
+var moment = require('moment');
 var async = require('async');
 var path = require('path');
 var url = require('url');
@@ -234,8 +235,27 @@ function getConceptsFromArticleUrl(articleUrl, sourceInformation, callback) {
     });
 }
 
-function getArticles(concepts, articleUrl, sourceInformation, callback) {
+function getDateArticleWasPublished(concepts, articleUrl, sourceInformation, callback) {
+    var queryString = `SELECT date FROM articles WHERE url = '` + articleUrl + `'`;
+
+    pool.query(queryString, function(error, result) {
+        if (error) {
+            console.log("getDateArticleWasPublished - ERROR");
+            console.log(error);
+            return callback(error);
+        }
+
+        var articlePublishedDate = result.rows[0]['date'];
+
+        callback(null, concepts, articlePublishedDate, articleUrl, sourceInformation);
+    })
+}
+
+function getArticles(concepts, articlePublishedDate, articleUrl, sourceInformation, callback) {
     console.log('getArticles: ' + articleUrl);
+
+    var lowestDate =  moment(articlePublishedDate).subtract(3, 'day').toDate();
+    var highestDate =  moment(articlePublishedDate).add(3, 'day').toDate();
 
     if (concepts.length == 0) {
         var articlesJSON = { 'recommended': [], 'similar': [], 'same': [] };
@@ -251,11 +271,11 @@ function getArticles(concepts, articleUrl, sourceInformation, callback) {
     async.parallel({
         // Get recommended articles
         recommended: function (cb) {
-            getArticlesFromSourcesWithCertainPoliticalAffiliations(conceptsFilterString, recommendedNewsSourcesString, articleUrl, cb);
+            getArticlesFromSourcesWithCertainPoliticalAffiliations(lowestDate, highestDate, conceptsFilterString, recommendedNewsSourcesString, articleUrl, cb);
         },
         // Get similar articles
         similar: function (cb) {
-            getArticlesFromSourcesWithCertainPoliticalAffiliations(conceptsFilterString, similarNewsSourcesString, articleUrl, cb);
+            getArticlesFromSourcesWithCertainPoliticalAffiliations(lowestDate, highestDate, conceptsFilterString, similarNewsSourcesString, articleUrl, cb);
         }
         // TODO
         // Get same articles
@@ -273,8 +293,11 @@ function getArticles(concepts, articleUrl, sourceInformation, callback) {
     });
 }
 
-function getArticlesFromSourcesWithCertainPoliticalAffiliations(conceptsFilterString, politicalAffiliationString, articleUrl, callback) {
+function getArticlesFromSourcesWithCertainPoliticalAffiliations(lowestDate, highestDate, conceptsFilterString, politicalAffiliationString, articleUrl, callback) {
     console.log('getArticlesFromSourcesWithCertainPoliticalAffiliations: ' + articleUrl);
+
+    var lowestDateString = moment(lowestDate).format('YYYY-MM-DD');
+    var highestDateString = moment(highestDate).format('YYYY-MM-DD');
 
     var queryString = `SELECT * FROM articles, news_sources
                         WHERE articles.id IN (
@@ -293,6 +316,8 @@ function getArticlesFromSourcesWithCertainPoliticalAffiliations(conceptsFilterSt
                         AND news_sources.display_name = articles.source_name
                         AND news_sources.political_affiliation IN
                             (` + politicalAffiliationString + `)
+                        AND articles.date >= '` + lowestDateString + `'
+                        AND articles.date < '` + highestDateString + `'
                         ORDER BY articles.date DESC;`;
 
     pool.query(queryString, function (error, result) {
@@ -311,6 +336,7 @@ app.get('/concepts/:url', function (req, res) {
     async.waterfall([
         getSourceInformation,
         async.apply(getConceptsFromArticleUrl, articleUrl),
+        getDateArticleWasPublished,
         getArticles
     ], function asyncComplete(error, result) {
 
