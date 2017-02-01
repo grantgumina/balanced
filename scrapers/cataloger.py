@@ -34,7 +34,7 @@ for key in news_sources:
         q.addNewsSource(er.getNewsSourceUri(ns))
 
         # Get some articles from each news soruce
-        q.addRequestedResult(RequestArticlesInfo(returnInfo=ReturnInfo(articleInfo=ArticleInfoFlags(duplicateList=False, concepts=True, categories=False, location=False, image=False))))
+        q.addRequestedResult(RequestArticlesInfo(count=100, returnInfo=ReturnInfo(articleInfo=ArticleInfoFlags(duplicateList=False, concepts=True, categories=False, location=False, image=False))))
 
         # Get articles from this news source
         res = er.execQuery(q)
