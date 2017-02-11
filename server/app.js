@@ -1,3 +1,4 @@
+var SQL = require('sql-template-strings')
 var express = require('express');
 var moment = require('moment');
 var async = require('async');
@@ -18,8 +19,8 @@ var config = {
     user: db_username,
     database: db_name,
     password: db_password,
-    host: 'localhost',
-    // host: '40.78.99.54',
+    // host: 'localhost',
+    host: '40.78.99.54',
     port: 5432,
     max: 10,
     idleTimeoutMillis: 30000,
@@ -220,6 +221,7 @@ function getSourceInformation(callback) {
 function getConceptsFromArticleUrl(articleUrl, sourceInformation, callback) {
     console.log('getConceptsFromArticleUrl: ' + articleUrl);
 
+    console.log(articleUrl);
     var queryString = `SELECT * FROM concepts WHERE article_id = (
                             SELECT id
                             FROM articles WHERE url = '` + articleUrl + `'
@@ -231,11 +233,13 @@ function getConceptsFromArticleUrl(articleUrl, sourceInformation, callback) {
             console.log(error);
             return callback(error);
         }
+
         callback(null, result.rows, articleUrl, sourceInformation);
     });
 }
 
 function getDateArticleWasPublished(concepts, articleUrl, sourceInformation, callback) {
+
     var queryString = `SELECT date FROM articles WHERE url = '` + articleUrl + `'`;
 
     pool.query(queryString, function(error, result) {
@@ -248,7 +252,7 @@ function getDateArticleWasPublished(concepts, articleUrl, sourceInformation, cal
         var articlePublishedDate = result.rows[0]['date'];
 
         callback(null, concepts, articlePublishedDate, articleUrl, sourceInformation);
-    })
+    });
 }
 
 function getArticles(concepts, articlePublishedDate, articleUrl, sourceInformation, callback) {
@@ -258,6 +262,7 @@ function getArticles(concepts, articlePublishedDate, articleUrl, sourceInformati
     var highestDate =  moment(articlePublishedDate).add(3, 'day').toDate();
 
     if (concepts.length == 0) {
+        console.log('getArticles - NO CONCEPTS FOUND');
         var articlesJSON = { 'recommended': [], 'similar': [], 'same': [] };
         return callback(null, articlesJSON);
     }
@@ -306,18 +311,18 @@ function getArticlesFromSourcesWithCertainPoliticalAffiliations(lowestDate, high
                                     SELECT *
                                     FROM concepts
                                     WHERE (
-                                        ` + conceptsFilterString + `
+                                        ${conceptsFilterString}
                                     )
                                 )
                             AS arts
                             GROUP BY article_id HAVING count(article_id) > 1
                         )
-                        AND articles.url <> '` + articleUrl + `'
+                        AND articles.url <> '${articleUrl}'
                         AND news_sources.display_name = articles.source_name
                         AND news_sources.political_affiliation IN
-                            (` + politicalAffiliationString + `)
-                        AND articles.date >= '` + lowestDateString + `'
-                        AND articles.date < '` + highestDateString + `'
+                            (${politicalAffiliationString})
+                        AND articles.date >= '${lowestDateString}'
+                        AND articles.date < '${highestDateString}'
                         ORDER BY articles.date DESC;`;
 
     pool.query(queryString, function (error, result) {
